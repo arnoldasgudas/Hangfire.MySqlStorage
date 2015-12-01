@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hangfire.MySql", "Hangfire.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Db", "Db", "{2F4B531D-B845-43B6-9ADF-4E50423EE26E}"
 	ProjectSection(SolutionItems) = preProject
-		Hangfire.MySql\install.sql = Hangfire.MySql\install.sql
+		Db\install.sql = Db\install.sql
 	EndProjectSection
 EndProject
 Global
