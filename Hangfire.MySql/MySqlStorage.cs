@@ -19,7 +19,15 @@ namespace Hangfire.MySql
         public virtual PersistentJobQueueProviderCollection QueueProviders { get; private set; }
 
         public MySqlStorage(string nameOrConnectionString)
+            : this(nameOrConnectionString, new MySqlStorageOptions())
         {
+        }
+
+        public MySqlStorage(string nameOrConnectionString, MySqlStorageOptions options)
+        {
+            if (nameOrConnectionString == null) throw new ArgumentNullException("nameOrConnectionString");
+            if (options == null) throw new ArgumentNullException("options");
+
             if (IsConnectionString(nameOrConnectionString))
             {
                 _connectionString = nameOrConnectionString;
@@ -35,7 +43,7 @@ namespace Hangfire.MySql
                         "Could not find connection string with name '{0}' in application config file",
                         nameOrConnectionString));
             }
-            _options = new MySqlStorageOptions();
+            _options = options;
 
             InitializeQueueProviders();
         }

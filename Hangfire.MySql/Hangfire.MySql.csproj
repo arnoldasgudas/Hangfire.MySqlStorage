@@ -30,6 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dapper">
+      <HintPath>..\packages\Dapper.1.42\lib\net45\Dapper.dll</HintPath>
+    </Reference>
     <Reference Include="Hangfire.Core">
       <HintPath>..\packages\Hangfire.Core.1.5.3\lib\net45\Hangfire.Core.dll</HintPath>
     </Reference>
@@ -64,6 +67,7 @@
     <Compile Include="JobQueue\MySqlJobQueueMonitoringApi.cs" />
     <Compile Include="JobQueue\MySqlJobQueueProvider.cs" />
     <Compile Include="MySqlDistributedLock.cs" />
+    <Compile Include="MySqlObjectsInstaller.cs" />
     <Compile Include="MySqlStorage.cs" />
     <Compile Include="MySqlStorageConnection.cs" />
     <Compile Include="MySqlStorageOptions.cs" />
@@ -76,7 +80,9 @@
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Install.sql" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
