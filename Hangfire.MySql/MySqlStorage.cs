@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
 using System.Transactions;
 using Hangfire.Annotations;
 using Hangfire.MySql.JobQueue;
@@ -13,8 +11,8 @@ namespace Hangfire.MySql
     public class MySqlStorage : JobStorage, IDisposable
     {
         private readonly string _connectionString;
+        private readonly MySqlConnection _existingConnection;
         private readonly MySqlStorageOptions _options;
-        private readonly HashSet<MySqlConnection> _connections = new HashSet<MySqlConnection>(); 
 
         public virtual PersistentJobQueueProviderCollection QueueProviders { get; private set; }
 
@@ -44,6 +42,16 @@ namespace Hangfire.MySql
                         nameOrConnectionString));
             }
             _options = options;
+
+            InitializeQueueProviders();
+        }
+
+        public MySqlStorage(MySqlConnection existingConnection)
+        {
+            if (existingConnection == null) throw new ArgumentNullException("existingConnection");
+
+            _existingConnection = existingConnection;
+            _options = new MySqlStorageOptions();
 
             InitializeQueueProviders();
         }
@@ -131,21 +139,26 @@ namespace Hangfire.MySql
 
         internal MySqlConnection CreateAndOpenConnection()
         {
+            if (_existingConnection != null)
+            {
+                return _existingConnection;
+            }
+
             var connection = new MySqlConnection(_connectionString);
             connection.Open();
-            _connections.Add(connection);
+            
             return connection;
         }
 
         internal void ReleaseConnection(MySqlConnection connection)
         {
-            connection.Dispose();
-            _connections.Remove(connection);
+            if (connection != null && !ReferenceEquals(connection, _existingConnection))
+            {
+                connection.Dispose();
+            }
         }
         public void Dispose()
         {
-            _connections.ToList().ForEach(connection => connection.Dispose());
-            _connections.Clear();
         }
     }
 }

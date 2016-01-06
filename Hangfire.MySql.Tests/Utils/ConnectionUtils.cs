@@ -12,7 +12,7 @@ namespace Hangfire.MySql.Tests
         private const string MasterDatabaseName = "sys";
         private const string DefaultDatabaseName = @"Hangfire.MySql.Tests";
         private const string DefaultConnectionStringTemplate
-            = "server=127.0.0.1;uid=root;pwd=root;database={0};";
+            = "server=127.0.0.1;uid=root;pwd=root;database={0};Allow User Variables=True";
             
         public static string GetDatabaseName()
         {

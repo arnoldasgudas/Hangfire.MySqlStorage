@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Dapper;
 using Hangfire.Common;
 using Hangfire.MySql.Entities;
 using Hangfire.Server;
@@ -10,29 +11,26 @@ using Hangfire.Storage;
 
 namespace Hangfire.MySql
 {
-    public class MySqlStorageConnection : IStorageConnection
+    public class MySqlStorageConnection : JobStorageConnection
     {
         private readonly MySqlStorage _storage;
-        public MySqlStorageConnection(MySqlStorage mySqlStorage)
+        public MySqlStorageConnection(MySqlStorage storage)
         {
-            _storage = mySqlStorage;
+            if (storage == null) throw new ArgumentNullException("storage");
+            _storage = storage;
         }
 
-        public void Dispose()
-        {
-        }
-
-        public IWriteOnlyTransaction CreateWriteTransaction()
+        public override IWriteOnlyTransaction CreateWriteTransaction()
         {
             return new MySqlWriteOnlyTransaction(_storage);
         }
 
-        public IDisposable AcquireDistributedLock(string resource, TimeSpan timeout)
+        public override IDisposable AcquireDistributedLock(string resource, TimeSpan timeout)
         {
             return new MySqlDistributedLock(_storage, resource, timeout);
         }
 
-        public string CreateExpiredJob(Job job, IDictionary<string, string> parameters, DateTime createdAt, TimeSpan expireIn)
+        public override string CreateExpiredJob(Job job, IDictionary<string, string> parameters, DateTime createdAt, TimeSpan expireIn)
         {
             if (job == null) throw new ArgumentNullException("job");
             if (parameters == null) throw new ArgumentNullException("parameters");
@@ -78,7 +76,7 @@ namespace Hangfire.MySql
             });
         }
 
-        public IFetchedJob FetchNextJob(string[] queues, CancellationToken cancellationToken)
+        public override IFetchedJob FetchNextJob(string[] queues, CancellationToken cancellationToken)
         {
             if (queues == null || queues.Length == 0) throw new ArgumentNullException("queues");
 
@@ -98,7 +96,7 @@ namespace Hangfire.MySql
             return persistentQueue.Dequeue(queues, cancellationToken);
         }
 
-        public void SetJobParameter(string id, string name, string value)
+        public override void SetJobParameter(string id, string name, string value)
         {
             if (id == null) throw new ArgumentNullException("id");
             if (name == null) throw new ArgumentNullException("name");
@@ -117,7 +115,7 @@ namespace Hangfire.MySql
             });
         }
 
-        public string GetJobParameter(string id, string name)
+        public override string GetJobParameter(string id, string name)
         {
             if (id == null) throw new ArgumentNullException("id");
             if (name == null) throw new ArgumentNullException("name");
@@ -144,7 +142,7 @@ namespace Hangfire.MySql
             });
         }
 
-        public JobData GetJobData(string jobId)
+        public override JobData GetJobData(string jobId)
         {
             if (jobId == null) throw new ArgumentNullException("jobId");
 
@@ -199,7 +197,7 @@ namespace Hangfire.MySql
             });
         }
 
-        public StateData GetStateData(string jobId)
+        public override StateData GetStateData(string jobId)
         {
             if (jobId == null) throw new ArgumentNullException("jobId");
 
@@ -241,7 +239,7 @@ namespace Hangfire.MySql
             });
         }
 
-        public void AnnounceServer(string serverId, ServerContext context)
+        public override void AnnounceServer(string serverId, ServerContext context)
         {
             if (serverId == null) throw new ArgumentNullException("serverId");
             if (context == null) throw new ArgumentNullException("context");
@@ -268,7 +266,7 @@ namespace Hangfire.MySql
             });
         }
 
-        public void RemoveServer(string serverId)
+        public override void RemoveServer(string serverId)
         {
             if (serverId == null) throw new ArgumentNullException("serverId");
 
@@ -281,7 +279,7 @@ namespace Hangfire.MySql
             });
         }
 
-        public void Heartbeat(string serverId)
+        public override void Heartbeat(string serverId)
         {
             if (serverId == null) throw new ArgumentNullException("serverId");
 
@@ -295,7 +293,7 @@ namespace Hangfire.MySql
             });
         }
 
-        public int RemoveTimedOutServers(TimeSpan timeOut)
+        public override int RemoveTimedOutServers(TimeSpan timeOut)
         {
             if (timeOut.Duration() != timeOut)
             {
@@ -311,7 +309,52 @@ namespace Hangfire.MySql
             });
         }
 
-        public HashSet<string> GetAllItemsFromSet(string key)
+        public override long GetSetCount(string key)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            return _storage.UseConnection(connection =>
+            {
+                var cmd = connection.CreateCommand();
+                cmd.CommandText = "select count(`Key`) from `Set` where `Key` = @key";
+                cmd.Parameters.AddWithValue("@key", key);
+                return (long)cmd.ExecuteScalar();
+            });
+        }
+
+        public override List<string> GetRangeFromSet(string key, int startingFrom, int endingAt)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            var result = new List<string>();
+            return _storage.UseConnection(connection =>
+            {
+                var cmd = connection.CreateCommand();
+                cmd.CommandText = @"
+select `Value` 
+from `Set` s 
+    inner join (
+	    select tmp.Id, @rownum := @rownum + 1 AS rank
+	    from `Set` tmp,
+            (select @rownum := -1) r ) ranked on ranked.Id = s.Id
+where s.`Key` = @key 
+    and  ranked.rank between @startingFrom and @endingAt";
+                cmd.Parameters.AddWithValue("@key", key);
+                cmd.Parameters.AddWithValue("@startingFrom", startingFrom);
+                cmd.Parameters.AddWithValue("@endingAt", endingAt);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        result.Add(reader.GetString("Value"));
+                    }
+                }
+
+                return result;
+            });
+        }
+
+        public override HashSet<string> GetAllItemsFromSet(string key)
         {
             if (key == null) throw new ArgumentNullException("key");
 
@@ -333,8 +376,12 @@ namespace Hangfire.MySql
             });
         }
 
-        public string GetFirstByLowestScoreFromSet(string key, double fromScore, double toScore)
+        public override string GetFirstByLowestScoreFromSet(string key, double fromScore, double toScore)
         {
+            if (key == null) throw new ArgumentNullException("key");
+            if (toScore < fromScore) 
+                throw new ArgumentException("The `toScore` value must be higher or equal to the `fromScore` value.");
+
             return _storage.UseConnection(connection =>
             {
                 var cmd = connection.CreateCommand();
@@ -359,7 +406,147 @@ namespace Hangfire.MySql
             });
         }
 
-        public void SetRangeInHash(string key, IEnumerable<KeyValuePair<string, string>> keyValuePairs)
+        public override long GetCounter(string key)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            string query = @"
+select sum(s.`Value`) from (select sum(`Value`) as `Value` from Counter
+where `Key` = @key
+union all
+select `Value` from AggregatedCounter
+where `Key` = @key) as s";
+
+            return 
+                _storage
+                    .UseConnection(connection =>
+                        connection.Query<long?>(query, new { key = key }).Single() ?? 0);
+        }
+
+        public override long GetHashCount(string key)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            return 
+                _storage
+                    .UseConnection(connection => 
+                        connection.Query<long>(
+                            "select count(Id) from Hash where `Key` = @key", 
+                            new { key = key }).Single());
+        }
+
+        public override TimeSpan GetHashTtl(string key)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            return _storage.UseConnection(connection =>
+            {
+                var result = 
+                    connection.Query<DateTime?>(
+                        "select min(ExpireAt) from Hash where `Key` = @key", 
+                        new { key = key }).Single();
+                if (!result.HasValue) return TimeSpan.FromSeconds(-1);
+
+                return result.Value - DateTime.UtcNow;
+            });
+        }
+
+        public override long GetListCount(string key)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            return 
+                _storage
+                    .UseConnection(connection => 
+                        connection.Query<long>(
+                            "select count(Id) from List where `Key` = @key", 
+                            new { key = key }).Single());
+        }
+
+        public override TimeSpan GetListTtl(string key)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            return _storage.UseConnection(connection =>
+            {
+                var result = 
+                    connection.Query<DateTime?>(
+                        "select min(ExpireAt) from List where `Key` = @key", 
+                        new { key = key }).Single();
+                if (!result.HasValue) return TimeSpan.FromSeconds(-1);
+
+                return result.Value - DateTime.UtcNow;
+            });
+        }
+
+        public override string GetValueFromHash(string key, string name)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+            if (name == null) throw new ArgumentNullException("name");
+
+            return 
+                _storage
+                    .UseConnection(connection => 
+                        connection.Query<string>(
+                            "select `Value` from Hash where `Key` = @key and `Field` = @field", 
+                            new { key = key, field = name }).SingleOrDefault());
+        }
+
+        public override List<string> GetRangeFromList(string key, int startingFrom, int endingAt)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            string query = @"
+select `Value` 
+from List lst
+    inner join (
+        select tmp.Id, @rownum := @rownum + 1 AS rank
+	    from `List` tmp,
+            (select @rownum := -1) r 
+        ) ranked on ranked.Id = lst.Id
+where lst.`Key` = @key 
+    and  ranked.rank between @startingFrom and @endingAt
+order by lst.Id desc";
+
+            return
+                _storage
+                    .UseConnection(connection =>
+                        connection.Query<string>(
+                            query,
+                            new {key = key, startingFrom = startingFrom + 1, endingAt = endingAt + 1})
+                            .ToList());
+        }
+
+        public override List<string> GetAllItemsFromList(string key)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            string query = @"
+select `Value` from List
+where `Key` = @key
+order by Id desc";
+
+            return _storage.UseConnection(connection => connection.Query<string>(query, new { key = key }).ToList());
+        }
+
+        public override TimeSpan GetSetTtl(string key)
+        {
+            if (key == null) throw new ArgumentNullException("key");
+
+            return _storage.UseConnection(connection =>
+            {
+                var result = 
+                    connection
+                        .Query<DateTime?>(
+                            "select min(ExpireAt) from `Set` where `Key` = @key", 
+                            new { key = key }).Single();
+                if (!result.HasValue) return TimeSpan.FromSeconds(-1);
+
+                return result.Value - DateTime.UtcNow;
+            });
+        }
+
+        public override void SetRangeInHash(string key, IEnumerable<KeyValuePair<string, string>> keyValuePairs)
         {
             if (key == null) throw new ArgumentNullException("key");
             if (keyValuePairs == null) throw new ArgumentNullException("keyValuePairs");
@@ -381,7 +568,7 @@ namespace Hangfire.MySql
             });
         }
 
-        public Dictionary<string, string> GetAllEntriesFromHash(string key)
+        public override Dictionary<string, string> GetAllEntriesFromHash(string key)
         {
             if (key == null) throw new ArgumentNullException("key");
 

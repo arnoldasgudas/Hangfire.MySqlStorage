@@ -27,6 +27,16 @@ CREATE TABLE `Counter` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
+CREATE TABLE `AggregatedCounter` (
+	Id int(11) NOT NULL AUTO_INCREMENT,
+	`Key` varchar(100) NOT NULL,
+	`Value` int(11) NOT NULL,
+	ExpireAt datetime DEFAULT NULL,
+	PRIMARY KEY (`Id`),
+	UNIQUE KEY `IX_CounterAggregated_Key` (`Key`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+
 -- ----------------------------
 -- Table structure for `DistributedLock`
 -- ----------------------------
@@ -116,7 +126,7 @@ CREATE TABLE `Set` (
   `Key` varchar(100) NOT NULL,
   `Value` varchar(256) NOT NULL,
   `Score` float NOT NULL,
-  `ExpireAt` date DEFAULT NULL,
+  `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `IX_Set_Key_Value` (`Key`,`Value`)
 ) ENGINE=InnoDB  CHARSET=latin1;

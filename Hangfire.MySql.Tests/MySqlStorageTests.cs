@@ -34,6 +34,17 @@ namespace Hangfire.MySql.Tests
         }
 
         [Fact, CleanDatabase]
+        public void Ctor_CanCreateSqlServerStorage_WithExistingConnection()
+        {
+            using (var connection = ConnectionUtils.CreateConnection())
+            {
+                var storage = new MySqlStorage(connection);
+
+                Assert.NotNull(storage);
+            }
+        }
+
+        [Fact, CleanDatabase]
         public void GetConnection_ReturnsNonNullInstance()
         {
             var storage = CreateStorage();

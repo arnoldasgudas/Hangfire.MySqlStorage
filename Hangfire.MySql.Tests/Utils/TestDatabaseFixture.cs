@@ -18,7 +18,7 @@ namespace Hangfire.MySql.Tests
         private static void CreateAndInitializeDatabase()
         {
             var recreateDatabaseSql = String.Format(
-                @"CREATE DATABASE IF NOT EXISTS `{0}`",
+                @"DROP DATABASE IF EXISTS `{0}`; CREATE DATABASE `{0}`",
                 ConnectionUtils.GetDatabaseName());
 
             using (var connection = new MySqlConnection(
