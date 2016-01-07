@@ -1,15 +1,11 @@
 ﻿using System.Reflection;
-using System.Threading;
 using System.Transactions;
-using Xunit;
 using Xunit.Sdk;
 
 namespace Hangfire.MySql.Tests
 {
     public class CleanDatabaseAttribute : BeforeAfterTestAttribute
     {
-        private static readonly object GlobalLock = new object();
-        
         private readonly IsolationLevel _isolationLevel;
 
         private TransactionScope _transaction;
@@ -22,8 +18,6 @@ namespace Hangfire.MySql.Tests
 
         public override void Before(MethodInfo methodUnderTest)
         {
-            Monitor.Enter(GlobalLock);
-
             if (_isolationLevel != IsolationLevel.Unspecified)
             {
                 _transaction = new TransactionScope(
@@ -43,8 +37,7 @@ namespace Hangfire.MySql.Tests
             }
             finally
             {
-                Monitor.Exit(GlobalLock);
-            }   
+            }
         }
     }
 }

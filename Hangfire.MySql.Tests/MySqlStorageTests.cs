@@ -1,7 +1,4 @@
 using System;
-using System.Linq;
-using System.Transactions;
-using MySql.Data.MySqlClient;
 using Xunit;
 
 namespace Hangfire.MySql.Tests
