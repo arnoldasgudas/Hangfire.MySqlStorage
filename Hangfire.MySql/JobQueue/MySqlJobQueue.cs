@@ -2,6 +2,7 @@
 using System.Data;
 using System.Globalization;
 using System.Threading;
+using Dapper;
 using Hangfire.Annotations;
 using Hangfire.Storage;
 using MySql.Data.MySqlClient;
@@ -105,12 +106,9 @@ namespace Hangfire.MySql.JobQueue
                 fetchedJob.Queue);
         }
 
-        public IDbCommand Enqueue(string queue, string jobId)
+        public void Enqueue(IDbConnection connection, string queue, string jobId)
         {
-            var cmd = new MySqlCommand("insert into JobQueue (JobId, Queue) values (@jobId, @queue)");
-            cmd.Parameters.AddWithValue("@jobId", jobId);
-            cmd.Parameters.AddWithValue("@queue", queue);
-            return cmd;
+            connection.Execute("insert into JobQueue (JobId, Queue) values (@jobId, @queue)", new { jobId, queue });
         }
 
         [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]

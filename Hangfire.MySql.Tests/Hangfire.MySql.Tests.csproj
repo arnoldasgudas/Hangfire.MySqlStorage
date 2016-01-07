@@ -39,6 +39,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="MySqlStorageConnectionTests.cs" />
+    <Compile Include="MySqlWriteOnlyTransactionTests.cs" />
     <Compile Include="Utils\TestDatabaseFixture.cs" />
     <Compile Include="Utils\ConnectionUtils.cs" />
     <Compile Include="Utils\CleanDatabaseAttribute.cs" />
