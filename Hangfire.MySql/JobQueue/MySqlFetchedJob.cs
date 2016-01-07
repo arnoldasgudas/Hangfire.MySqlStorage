@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Data;
+using Hangfire.Logging;
 using Hangfire.Storage;
-using MySql.Data.MySqlClient;
 
 namespace Hangfire.MySql.JobQueue
 {
     public class MySqlFetchedJob : IFetchedJob
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+
         private readonly MySqlStorage _storage;
         private readonly IDbConnection _connection;
         private readonly IDbTransaction _transaction;
@@ -34,11 +36,13 @@ namespace Hangfire.MySql.JobQueue
 
         public void RemoveFromQueue()
         {
+            Logger.TraceFormat("RemoveFromQueue JobId={0}", JobId);
             _transaction.Commit();
         }
 
         public void Requeue()
         {
+            Logger.TraceFormat("Requeue JobId={0}", JobId);
             _transaction.Rollback();
         }
 

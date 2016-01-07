@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Hangfire.Logging;
 
 namespace Hangfire.MySql.JobQueue
 {
     public class PersistentJobQueueProviderCollection : IEnumerable<IPersistentJobQueueProvider>
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+
         private readonly List<IPersistentJobQueueProvider> _providers
             = new List<IPersistentJobQueueProvider>();
         private readonly Dictionary<string, IPersistentJobQueueProvider> _providersByQueue
@@ -26,6 +29,8 @@ namespace Hangfire.MySql.JobQueue
         {
             if (provider == null) throw new ArgumentNullException("provider");
             if (queues == null) throw new ArgumentNullException("queues");
+
+            Logger.TraceFormat("Add providers");
 
             _providers.Add(provider);
 

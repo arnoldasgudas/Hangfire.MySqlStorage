@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using Dapper;
 using Hangfire.Common;
+using Hangfire.Logging;
 using Hangfire.MySql.Entities;
 using Hangfire.Server;
 using Hangfire.Storage;
@@ -13,6 +14,8 @@ namespace Hangfire.MySql
 {
     public class MySqlStorageConnection : JobStorageConnection
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+
         private readonly MySqlStorage _storage;
         public MySqlStorageConnection(MySqlStorage storage)
         {
@@ -36,6 +39,8 @@ namespace Hangfire.MySql
             if (parameters == null) throw new ArgumentNullException("parameters");
 
             var invocationData = InvocationData.Serialize(job);
+
+            Logger.TraceFormat("CreateExpiredJob={0}", JobHelper.ToJson(invocationData));
 
             return _storage.UseConnection(connection =>
             {

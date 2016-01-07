@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using Dapper;
 using Hangfire.Annotations;
+using Hangfire.Logging;
 using Hangfire.Storage;
 using MySql.Data.MySqlClient;
 
@@ -12,6 +13,8 @@ namespace Hangfire.MySql.JobQueue
 {
     public class MySqlJobQueue : IPersistentJobQueue
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+
         private readonly MySqlStorage _storage;
         private readonly MySqlStorageOptions _options;
         public MySqlJobQueue(MySqlStorage storage, MySqlStorageOptions options)
@@ -86,6 +89,7 @@ limit 1";
 
         public void Enqueue(IDbConnection connection, string queue, string jobId)
         {
+            Logger.TraceFormat("Enqueue JobId={0} Queue={1}", jobId, queue);
             connection.Execute("insert into JobQueue (JobId, Queue) values (@jobId, @queue)", new { jobId, queue });
         }
 
