@@ -5,7 +5,7 @@ using MySql.Data.MySqlClient;
 
 namespace Hangfire.MySql.JobQueue
 {
-    internal class MySqlFetchedJob : IFetchedJob
+    public class MySqlFetchedJob : IFetchedJob
     {
         private readonly MySqlStorage _storage;
         private readonly MySqlConnection _connection;

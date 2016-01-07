@@ -83,14 +83,12 @@ CREATE TABLE `JobParameter` (
 CREATE TABLE `JobQueue` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `JobId` int(11) NOT NULL,
-  `Queue` varchar(20) NOT NULL,
+  `Queue` varchar(50) NOT NULL,
   `FetchedAt` datetime(6) DEFAULT NULL,
   `FetchToken` varchar(36) DEFAULT NULL,
   
   PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_JobQueue_FetchToken` (`FetchToken`),
-  KEY `FK_JobQueue_Job` (`JobId`),
-  CONSTRAINT `FK_JobQueue_Job` FOREIGN KEY (`JobId`) REFERENCES `Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+  INDEX `IX_JobQueue_QueueAndFetchedAt` (`Queue`,`FetchedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ----------------------------

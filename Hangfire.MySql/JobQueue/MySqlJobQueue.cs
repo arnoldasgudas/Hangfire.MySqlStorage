@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using Dapper;
 using Hangfire.Annotations;
@@ -9,12 +10,15 @@ using MySql.Data.MySqlClient;
 
 namespace Hangfire.MySql.JobQueue
 {
-    internal class MySqlJobQueue : IPersistentJobQueue
+    public class MySqlJobQueue : IPersistentJobQueue
     {
         private readonly MySqlStorage _storage;
         private readonly MySqlStorageOptions _options;
         public MySqlJobQueue(MySqlStorage storage, MySqlStorageOptions options)
         {
+            if (storage == null) throw new ArgumentNullException("storage");
+            if (options == null) throw new ArgumentNullException("options");
+
             _storage = storage;
             _options = options;
         }
@@ -27,7 +31,17 @@ namespace Hangfire.MySql.JobQueue
             FetchedJob fetchedJob = null;
             MySqlConnection connection = null;
             MySqlTransaction transaction = null;
-            int jobQueueId = 0;
+            
+            string fetchJobSqlTemplate = @"
+select Id, JobId, Queue
+from JobQueue
+where (FetchedAt is null or FetchedAt < DATE_ADD(UTC_TIMESTAMP(), INTERVAL @timeout SECOND))
+and Queue in @queues
+limit 1;
+delete from JobQueue
+where (FetchedAt is null or FetchedAt < DATE_ADD(UTC_TIMESTAMP(), INTERVAL @timeout SECOND))
+and Queue in @queues
+limit 1";
 
             do
             {
@@ -38,47 +52,11 @@ namespace Hangfire.MySql.JobQueue
 
                 try
                 {
-                    var cmd = connection.CreateCommand();
-                    cmd.Parameters.AddWithValue("@timeout", _options.InvisibilityTimeout.Negate().TotalSeconds);
-
-                    var parameters = new string[queues.Length];
-                    foreach (var queue in queues)
-                    {
-                        var i = Array.IndexOf(queues, queue);
-                        parameters[i] = string.Format("@queue{0}", i);
-                        cmd.Parameters.AddWithValue(parameters[i], queues[i]);
-                    }
-                    
-                     cmd.CommandText = 
-                         string.Format(
-                             "select Id, JobId, Queue " +
-                             "from JobQueue " +
-                             "where (FetchedAt is null or FetchedAt < DATE_ADD(UTC_TIMESTAMP(), INTERVAL @timeout SECOND)) " +
-                             "   and Queue in ({0}) " +
-                             "limit 1",
-                             string.Join(",", parameters)); ;
-
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            jobQueueId = reader.GetInt32("Id");
-                            fetchedJob =
-                                new FetchedJob
-                                {
-                                    Id = jobQueueId,
-                                    JobId = reader.GetInt32("JobId"),
-                                    Queue = reader.GetString("Queue")
-                                };
-                        }
-                    }
-
-                    if (jobQueueId > 0)
-                    {
-                        cmd.CommandText = "delete from JobQueue where Id = @Id ";
-                        cmd.Parameters.AddWithValue("@Id", jobQueueId);
-                        cmd.ExecuteNonQuery();
-                    }
+                    fetchedJob = connection.Query<FetchedJob>(
+                               fetchJobSqlTemplate,
+                               new { queues = queues, timeout = _options.InvisibilityTimeout.Negate().TotalSeconds },
+                               transaction)
+                               .SingleOrDefault();
                 }
                 catch (MySqlException)
                 {
