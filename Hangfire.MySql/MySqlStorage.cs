@@ -3,7 +3,6 @@ using System.Configuration;
 using System.Data;
 using System.Transactions;
 using Hangfire.Annotations;
-using Hangfire.Logging;
 using Hangfire.MySql.JobQueue;
 using Hangfire.Storage;
 using MySql.Data.MySqlClient;
@@ -13,8 +12,6 @@ namespace Hangfire.MySql
 {
     public class MySqlStorage : JobStorage, IDisposable
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
-
         private readonly string _connectionString;
         private readonly MySqlConnection _existingConnection;
         private readonly MySqlStorageOptions _options;
@@ -150,7 +147,6 @@ namespace Hangfire.MySql
             }
 
             var connection = new MySqlConnection(_connectionString);
-            Logger.TraceFormat("Creating connection={0}", connection.GetHashCode());
             connection.Open();
             
             return connection;
@@ -160,7 +156,6 @@ namespace Hangfire.MySql
         {
             if (connection != null && !ReferenceEquals(connection, _existingConnection))
             {
-                Logger.TraceFormat("ReleaseConnection connection={0}", connection.GetHashCode());
                 connection.Dispose();
             }
         }
