@@ -34,6 +34,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="JobQueue\MySqlFetchedJobTests.cs" />
     <Compile Include="JobQueue\MySqlJobQueueTests.cs" />
     <Compile Include="JobQueue\PersistentJobQueueProviderCollectionTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -42,6 +43,7 @@
     </Compile>
     <Compile Include="MySqlStorageConnectionTests.cs" />
     <Compile Include="MySqlWriteOnlyTransactionTests.cs" />
+    <Compile Include="StorageOptionsTests.cs" />
     <Compile Include="Utils\TestDatabaseFixture.cs" />
     <Compile Include="Utils\ConnectionUtils.cs" />
     <Compile Include="Utils\CleanDatabaseAttribute.cs" />

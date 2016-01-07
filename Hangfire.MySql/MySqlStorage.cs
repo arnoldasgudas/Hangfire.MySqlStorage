@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Configuration;
+using System.Data;
 using System.Transactions;
 using Hangfire.Annotations;
 using Hangfire.MySql.JobQueue;
 using Hangfire.Storage;
 using MySql.Data.MySqlClient;
+using IsolationLevel = System.Transactions.IsolationLevel;
 
 namespace Hangfire.MySql
 {
@@ -150,7 +152,7 @@ namespace Hangfire.MySql
             return connection;
         }
 
-        internal void ReleaseConnection(MySqlConnection connection)
+        internal void ReleaseConnection(IDbConnection connection)
         {
             if (connection != null && !ReferenceEquals(connection, _existingConnection))
             {

@@ -8,10 +8,11 @@ namespace Hangfire.MySql.JobQueue
     public class MySqlFetchedJob : IFetchedJob
     {
         private readonly MySqlStorage _storage;
-        private readonly MySqlConnection _connection;
+        private readonly IDbConnection _connection;
         private readonly IDbTransaction _transaction;
-        public MySqlFetchedJob(MySqlStorage storage, MySqlConnection connection, MySqlTransaction transaction, string jobId, string queue)
+        public MySqlFetchedJob(MySqlStorage storage, IDbConnection connection, IDbTransaction transaction, string jobId, string queue)
         {
+            if (storage == null) throw new ArgumentNullException("storage");
             if (connection == null) throw new ArgumentNullException("connection");
             if (transaction == null) throw new ArgumentNullException("transaction");
             if (jobId == null) throw new ArgumentNullException("jobId");
