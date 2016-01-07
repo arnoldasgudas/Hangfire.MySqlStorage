@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Hangfire.MySqlStorage</id>
-    <version>0.0.1</version>
+    <version>0.2.0</version>
     <title>Hangfire MySql Storage</title>
     <authors>Arnoldas Gudas</authors>
     <owners></owners>
