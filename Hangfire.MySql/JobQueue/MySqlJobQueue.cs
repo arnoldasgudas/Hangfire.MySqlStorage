@@ -11,7 +11,7 @@ using MySql.Data.MySqlClient;
 
 namespace Hangfire.MySql.JobQueue
 {
-    public class MySqlJobQueue : IPersistentJobQueue
+    internal class MySqlJobQueue : IPersistentJobQueue
     {
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 

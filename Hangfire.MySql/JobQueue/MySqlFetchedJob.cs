@@ -5,7 +5,7 @@ using Hangfire.Storage;
 
 namespace Hangfire.MySql.JobQueue
 {
-    public class MySqlFetchedJob : IFetchedJob
+    internal class MySqlFetchedJob : IFetchedJob
     {
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 

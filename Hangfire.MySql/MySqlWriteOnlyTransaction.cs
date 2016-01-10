@@ -10,7 +10,7 @@ using MySql.Data.MySqlClient;
 
 namespace Hangfire.MySql
 {
-    public class MySqlWriteOnlyTransaction : JobStorageTransaction
+    internal class MySqlWriteOnlyTransaction : JobStorageTransaction
     {
         private readonly MySqlStorage _storage;
 
