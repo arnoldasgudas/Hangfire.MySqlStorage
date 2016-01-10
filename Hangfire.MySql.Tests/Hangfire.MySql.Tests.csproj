@@ -34,6 +34,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CountersAggregatorTests.cs" />
     <Compile Include="JobQueue\MySqlFetchedJobTests.cs" />
     <Compile Include="JobQueue\MySqlJobQueueTests.cs" />
     <Compile Include="JobQueue\PersistentJobQueueProviderCollectionTests.cs" />

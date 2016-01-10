@@ -1,9 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.Linq;
+using System.Text;
 using System.Transactions;
 using Hangfire.Annotations;
+using Hangfire.Logging;
 using Hangfire.MySql.JobQueue;
+using Hangfire.Server;
 using Hangfire.Storage;
 using MySql.Data.MySqlClient;
 using IsolationLevel = System.Transactions.IsolationLevel;
@@ -63,6 +68,62 @@ namespace Hangfire.MySql
             QueueProviders = 
                 new PersistentJobQueueProviderCollection(
                     new MySqlJobQueueProvider(this, _options));
+        }
+
+        public override IEnumerable<IServerComponent> GetComponents()
+        {
+            //TODO: implement
+            //yield return new ExpirationManager(this, _options.JobExpirationCheckInterval);
+            yield return new CountersAggregator(this, _options.CountersAggregateInterval);
+        }
+
+        public override void WriteOptionsToLog(ILog logger)
+        {
+            logger.Info("Using the following options for SQL Server job storage:");
+            logger.InfoFormat("    Queue poll interval: {0}.", _options.QueuePollInterval);
+        }
+
+        public override string ToString()
+        {
+            const string canNotParseMessage = "<Connection string can not be parsed>";
+
+            try
+            {
+                var parts = _connectionString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(x => new { Key = x[0].Trim(), Value = x[1].Trim() })
+                    .ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+
+                var builder = new StringBuilder();
+
+                foreach (var alias in new[] { "Data Source", "Server", "Address", "Addr", "Network Address" })
+                {
+                    if (parts.ContainsKey(alias))
+                    {
+                        builder.Append(parts[alias]);
+                        break;
+                    }
+                }
+
+                if (builder.Length != 0) builder.Append("@");
+
+                foreach (var alias in new[] { "Database", "Initial Catalog" })
+                {
+                    if (parts.ContainsKey(alias))
+                    {
+                        builder.Append(parts[alias]);
+                        break;
+                    }
+                }
+
+                return builder.Length != 0
+                    ? String.Format("Server: {0}", builder)
+                    : canNotParseMessage;
+            }
+            catch (Exception)
+            {
+                return canNotParseMessage;
+            }
         }
 
         public override IMonitoringApi GetMonitoringApi()
