@@ -4,6 +4,7 @@ using System.Linq;
 using System.Transactions;
 using Dapper;
 using Hangfire.Common;
+using Hangfire.Logging;
 using Hangfire.States;
 using Hangfire.Storage;
 using MySql.Data.MySqlClient;
@@ -12,6 +13,8 @@ namespace Hangfire.MySql
 {
     internal class MySqlWriteOnlyTransaction : JobStorageTransaction
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+
         private readonly MySqlStorage _storage;
 
         private readonly Queue<Action<MySqlConnection>> _commandQueue
@@ -27,6 +30,8 @@ namespace Hangfire.MySql
 
         public override void ExpireJob(string jobId, TimeSpan expireIn)
         {
+            Logger.TraceFormat("ExpireJob jobId={0}",jobId);
+
             QueueCommand(x => 
                 x.Execute(
                     "update Job set ExpireAt = @expireAt where Id = @id",
@@ -35,6 +40,8 @@ namespace Hangfire.MySql
 
         public override void PersistJob(string jobId)
         {
+            Logger.TraceFormat("PersistJob jobId={0}", jobId);
+
             QueueCommand(x => 
                 x.Execute(
                     "update Job set ExpireAt = NULL where Id = @id",
@@ -43,6 +50,8 @@ namespace Hangfire.MySql
 
         public override void SetJobState(string jobId, IState state)
         {
+            Logger.TraceFormat("SetJobState jobId={0}", jobId);
+
             QueueCommand(x => x.Execute(
                 "insert into State (JobId, Name, Reason, CreatedAt, Data) " +
                 "values (@jobId, @name, @reason, @createdAt, @data); " +
@@ -60,6 +69,8 @@ namespace Hangfire.MySql
 
         public override void AddJobState(string jobId, IState state)
         {
+            Logger.TraceFormat("AddJobState jobId={0}, state={1}", jobId, state);
+
             QueueCommand(x => x.Execute(
                 "insert into State (JobId, Name, Reason, CreatedAt, Data) " +
                 "values (@jobId, @name, @reason, @createdAt, @data)",
@@ -75,6 +86,8 @@ namespace Hangfire.MySql
 
         public override void AddToQueue(string queue, string jobId)
         {
+            Logger.TraceFormat("AddToQueue jobId={0}", jobId);
+
             var provider = _storage.QueueProviders.GetProvider(queue);
             var persistentQueue = provider.GetJobQueue();
 
@@ -83,6 +96,8 @@ namespace Hangfire.MySql
 
         public override void IncrementCounter(string key)
         {
+            Logger.TraceFormat("IncrementCounter key={0}", key);
+
             QueueCommand(x => 
                 x.Execute(
                     "insert into Counter (`Key`, `Value`) values (@key, @value)",
@@ -92,6 +107,8 @@ namespace Hangfire.MySql
 
         public override void IncrementCounter(string key, TimeSpan expireIn)
         {
+            Logger.TraceFormat("IncrementCounter key={0}, expireIn={1}", key, expireIn);
+
             QueueCommand(x => 
                 x.Execute(
                     "insert into Counter (`Key`, `Value`, `ExpireAt`) values (@key, @value, @expireAt)",
@@ -100,6 +117,8 @@ namespace Hangfire.MySql
 
         public override void DecrementCounter(string key)
         {
+            Logger.TraceFormat("DecrementCounter key={0}", key);
+
             QueueCommand(x => 
                 x.Execute(
                     "insert into Counter (`Key`, `Value`) values (@key, @value)",
@@ -108,6 +127,8 @@ namespace Hangfire.MySql
 
         public override void DecrementCounter(string key, TimeSpan expireIn)
         {
+            Logger.TraceFormat("DecrementCounter key={0} expireIn={1}", key, expireIn);
+
             QueueCommand(x => 
                 x.Execute(
                     "insert into Counter (`Key`, `Value`, `ExpireAt`) values (@key, @value, @expireAt)",
@@ -121,6 +142,8 @@ namespace Hangfire.MySql
 
         public override void AddToSet(string key, string value, double score)
         {
+            Logger.TraceFormat("AddToSet key={0} value={1}", key, value);
+
             AcquireSetLock();
             QueueCommand(x => x.Execute(
                 "INSERT INTO `Set` (`Key`, `Value`, `Score`) " +
@@ -131,6 +154,8 @@ namespace Hangfire.MySql
 
         public override void AddRangeToSet(string key, IList<string> items)
         {
+            Logger.TraceFormat("AddRangeToSet key={0}", key);
+
             if (key == null) throw new ArgumentNullException("key");
             if (items == null) throw new ArgumentNullException("items");
 
@@ -144,6 +169,8 @@ namespace Hangfire.MySql
 
         public override void RemoveFromSet(string key, string value)
         {
+            Logger.TraceFormat("RemoveFromSet key={0} value={1}", key, value);
+
             AcquireSetLock();
             QueueCommand(x => x.Execute(
                 "delete from `Set` where `Key` = @key and Value = @value",
@@ -152,6 +179,8 @@ namespace Hangfire.MySql
 
         public override void ExpireSet(string key, TimeSpan expireIn)
         {
+            Logger.TraceFormat("ExpireSet key={0} expirein={1}", key, expireIn);
+
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireSetLock();
@@ -163,6 +192,8 @@ namespace Hangfire.MySql
 
         public override void InsertToList(string key, string value)
         {
+            Logger.TraceFormat("InsertToList key={0} value={1}", key, value);
+
             AcquireListLock();
             QueueCommand(x => x.Execute(
                 "insert into List (`Key`, Value) values (@key, @value)",
@@ -174,6 +205,8 @@ namespace Hangfire.MySql
         {
             if (key == null) throw new ArgumentNullException("key");
 
+            Logger.TraceFormat("ExpireList key={0} expirein={1}", key, expireIn);
+
             AcquireListLock();
             QueueCommand(x => 
                 x.Execute(
@@ -183,6 +216,8 @@ namespace Hangfire.MySql
 
         public override void RemoveFromList(string key, string value)
         {
+            Logger.TraceFormat("RemoveFromList key={0} value={1}", key, value);
+
             AcquireListLock();
             QueueCommand(x => x.Execute(
                 "delete from List where `Key` = @key and Value = @value",
@@ -191,6 +226,8 @@ namespace Hangfire.MySql
 
         public override void TrimList(string key, int keepStartingFrom, int keepEndingAt)
         {
+            Logger.TraceFormat("TrimList key={0} from={1} to={2}", key, keepStartingFrom, keepEndingAt);
+
             AcquireListLock();
             QueueCommand(x => x.Execute(
                 @"delete lst
@@ -205,6 +242,8 @@ where lst.Key = @key
 
         public override void PersistHash(string key)
         {
+            Logger.TraceFormat("PersistHash key={0} ", key);
+
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireHashLock();
@@ -213,6 +252,8 @@ where lst.Key = @key
 
         public override void PersistSet(string key)
         {
+            Logger.TraceFormat("PersistSet key={0} ", key);
+
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireSetLock();
@@ -221,6 +262,8 @@ where lst.Key = @key
 
         public override void RemoveSet(string key)
         {
+            Logger.TraceFormat("RemoveSet key={0} ", key);
+
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireSetLock();
@@ -229,6 +272,8 @@ where lst.Key = @key
 
         public override void PersistList(string key)
         {
+            Logger.TraceFormat("PersistList key={0} ", key);
+
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireListLock();
@@ -237,6 +282,8 @@ where lst.Key = @key
 
         public override void SetRangeInHash(string key, IEnumerable<KeyValuePair<string, string>> keyValuePairs)
         {
+            Logger.TraceFormat("SetRangeInHash key={0} ", key);
+
             if (key == null) throw new ArgumentNullException("key");
             if (keyValuePairs == null) throw new ArgumentNullException("keyValuePairs");
 
@@ -251,6 +298,8 @@ where lst.Key = @key
 
         public override void ExpireHash(string key, TimeSpan expireIn)
         {
+            Logger.TraceFormat("ExpireHash key={0} ", key);
+
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireHashLock();
@@ -262,6 +311,8 @@ where lst.Key = @key
 
         public override void RemoveHash(string key)
         {
+            Logger.TraceFormat("RemoveHash key={0} ", key);
+
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireHashLock();
