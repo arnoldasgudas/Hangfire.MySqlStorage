@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Xunit;
 
 namespace Hangfire.MySql.Tests
@@ -50,6 +51,18 @@ namespace Hangfire.MySql.Tests
                 Assert.NotNull(connection);
             }
         }
+
+        [Fact, CleanDatabase]
+        public void GetComponents_ReturnsAllNeededComponents()
+        {
+            var storage = CreateStorage();
+
+            var components = storage.GetComponents();
+
+            var componentTypes = components.Select(x => x.GetType()).ToArray();
+            Assert.Contains(typeof(ExpirationManager), componentTypes);
+        }
+
 
         private MySqlStorage CreateStorage()
         {

@@ -35,6 +35,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CountersAggregatorTests.cs" />
+    <Compile Include="ExpirationManagerTests.cs" />
     <Compile Include="JobQueue\MySqlFetchedJobTests.cs" />
     <Compile Include="JobQueue\MySqlJobQueueTests.cs" />
     <Compile Include="JobQueue\PersistentJobQueueProviderCollectionTests.cs" />

@@ -72,8 +72,7 @@ namespace Hangfire.MySql
 
         public override IEnumerable<IServerComponent> GetComponents()
         {
-            //TODO: implement
-            //yield return new ExpirationManager(this, _options.JobExpirationCheckInterval);
+            yield return new ExpirationManager(this, _options.JobExpirationCheckInterval);
             yield return new CountersAggregator(this, _options.CountersAggregateInterval);
         }
 
