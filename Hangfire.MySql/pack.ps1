@@ -1,1 +1,1 @@
-nuget pack Hangfire.MySql.csproj -IncludeReferencedProjects -Prop Configuration=Release
+nuget pack Hangfire.MySql.csproj -IncludeReferencedProjects -Prop Configuration=Release -version ???
