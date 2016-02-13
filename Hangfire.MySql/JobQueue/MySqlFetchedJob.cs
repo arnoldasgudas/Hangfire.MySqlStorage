@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Data;
+using System.Globalization;
+using Dapper;
 using Hangfire.Logging;
 using Hangfire.Storage;
 
@@ -11,39 +13,55 @@ namespace Hangfire.MySql.JobQueue
 
         private readonly MySqlStorage _storage;
         private readonly IDbConnection _connection;
-        private readonly IDbTransaction _transaction;
-        public MySqlFetchedJob(MySqlStorage storage, IDbConnection connection, IDbTransaction transaction, string jobId, string queue)
+        private readonly int _id;
+
+        public MySqlFetchedJob(
+            MySqlStorage storage, 
+            IDbConnection connection,
+            FetchedJob fetchedJob)
         {
             if (storage == null) throw new ArgumentNullException("storage");
             if (connection == null) throw new ArgumentNullException("connection");
-            if (transaction == null) throw new ArgumentNullException("transaction");
-            if (jobId == null) throw new ArgumentNullException("jobId");
-            if (queue == null) throw new ArgumentNullException("queue");
+            if (fetchedJob == null) throw new ArgumentNullException("fetchedJob");
 
             _storage = storage;
             _connection = connection;
-            _transaction = transaction;
-
-            JobId = jobId;
-            Queue = queue;
+            _id = fetchedJob.Id;
+            JobId = fetchedJob.JobId.ToString(CultureInfo.InvariantCulture);
+            Queue = fetchedJob.Queue; 
         }
 
         public void Dispose()
         {
-            _transaction.Dispose();
             _storage.ReleaseConnection(_connection);
         }
 
         public void RemoveFromQueue()
         {
             Logger.TraceFormat("RemoveFromQueue JobId={0}", JobId);
-            _transaction.Commit();
+
+            //todo: unit test
+            _connection.Execute(
+                "delete from JobQueue " +
+                "where Id = @id",
+                new
+                {
+                    id = _id
+                });
         }
 
         public void Requeue()
         {
             Logger.TraceFormat("Requeue JobId={0}", JobId);
-            _transaction.Rollback();
+
+            //todo: unit test
+            _connection.Execute(
+                "update JobQueue set FetchedAt = null " +
+                "where Id = @id",
+                new
+                {
+                    id = _id
+                });
         }
 
         public string JobId { get; private set; }

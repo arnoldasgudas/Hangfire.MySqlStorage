@@ -11,7 +11,8 @@ namespace Hangfire.MySql
     {
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
-        private static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromSeconds(30);
+        private const string DistributedLockKey = "expirationmanager";
         private static readonly TimeSpan DelayBetweenPasses = TimeSpan.FromSeconds(1);
         private const int NumberOfRecordsInSinglePass = 1000;
 
@@ -54,12 +55,23 @@ namespace Hangfire.MySql
                     {
                         try
                         {
-                            removedCount = connection.Execute(
-                                String.Format(@"
-set transaction isolation level read committed;
-select null from `{0}` where ExpireAt < @now for update;
-delete from `{0}` where ExpireAt < @now limit @count;", table),
-                                new {now = DateTime.UtcNow, count = NumberOfRecordsInSinglePass});
+                            Logger.DebugFormat("delete from `{0}` where ExpireAt < @now limit @count;", table);
+
+                            using (
+                                new MySqlDistributedLock(
+                                    connection, 
+                                    DistributedLockKey, 
+                                    DefaultLockTimeout,
+                                    cancellationToken).Acquire())
+                            {
+                                removedCount = connection.Execute(
+                                    String.Format(
+                                        "select null from `{0}` where ExpireAt < @now; " +
+                                        "delete from `{0}` where ExpireAt < @now limit @count;", table),
+                                    new {now = DateTime.UtcNow, count = NumberOfRecordsInSinglePass});
+                            }
+
+                            Logger.DebugFormat("removed records count={0}",removedCount);
                         }
                         catch (MySqlException ex)
                         {

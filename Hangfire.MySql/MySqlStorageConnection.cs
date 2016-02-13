@@ -30,7 +30,7 @@ namespace Hangfire.MySql
 
         public override IDisposable AcquireDistributedLock(string resource, TimeSpan timeout)
         {
-            return new MySqlDistributedLock(_storage, resource, timeout);
+            return new MySqlDistributedLock(_storage, resource, timeout).Acquire();
         }
 
         public override string CreateExpiredJob(Job job, IDictionary<string, string> parameters, DateTime createdAt, TimeSpan expireIn)
@@ -54,6 +54,8 @@ namespace Hangfire.MySql
                 cmd.Parameters.AddWithValue("@createdAt", createdAt);
                 cmd.Parameters.AddWithValue("@expireAt", createdAt.Add(expireIn));
                 var jobId = Convert.ToString(cmd.ExecuteScalar());
+
+                Logger.DebugFormat("Inserted into Job, jobId={0}", jobId);
 
                 if (parameters.Count > 0)
                 {
@@ -189,6 +191,7 @@ namespace Hangfire.MySql
                 }
                 catch (JobLoadException ex)
                 {
+                    Logger.ErrorException(ex.Message, ex);
                     loadException = ex;
                 }
 
@@ -266,7 +269,7 @@ namespace Hangfire.MySql
                             Queues = context.Queues,
                             StartedAt = DateTime.UtcNow,
                         }));
-                cmd.Parameters.AddWithValue("@Heartbeat", DateTime.Now);
+                cmd.Parameters.AddWithValue("@Heartbeat", DateTime.UtcNow);
                 cmd.ExecuteNonQuery();
             });
         }

@@ -17,6 +17,8 @@ namespace Hangfire.MySql
 {
     public class MySqlStorage : JobStorage, IDisposable
     {
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof (MySqlStorage));
+
         private readonly string _connectionString;
         private readonly MySqlConnection _existingConnection;
         private readonly MySqlStorageOptions _options;
@@ -49,6 +51,14 @@ namespace Hangfire.MySql
                         nameOrConnectionString));
             }
             _options = options;
+
+            if (options.PrepareSchemaIfNecessary)
+            {
+                using (var connection = CreateAndOpenConnection())
+                {
+                    MySqlObjectsInstaller.Install(connection);
+                }
+            }
 
             InitializeQueueProviders();
         }
@@ -119,8 +129,9 @@ namespace Hangfire.MySql
                     ? String.Format("Server: {0}", builder)
                     : canNotParseMessage;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Logger.ErrorException(ex.Message, ex);
                 return canNotParseMessage;
             }
         }

@@ -9,7 +9,7 @@ namespace Hangfire.MySql
 
         public MySqlStorageOptions()
         {
-            TransactionIsolationLevel = null;
+            TransactionIsolationLevel = IsolationLevel.ReadCommitted;
             QueuePollInterval = TimeSpan.FromSeconds(15);
             JobExpirationCheckInterval = TimeSpan.FromHours(1);
             CountersAggregateInterval = TimeSpan.FromMinutes(5);

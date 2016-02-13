@@ -13,7 +13,7 @@ namespace Hangfire.MySql.JobQueue
 {
     internal class MySqlJobQueue : IPersistentJobQueue
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(MySqlJobQueue));
 
         private readonly MySqlStorage _storage;
         private readonly MySqlStorageOptions _options;
@@ -33,45 +33,49 @@ namespace Hangfire.MySql.JobQueue
 
             FetchedJob fetchedJob = null;
             MySqlConnection connection = null;
-            MySqlTransaction transaction = null;
-            
-            string fetchJobSqlTemplate = @"
-select Id, JobId, Queue
-from JobQueue
-where (FetchedAt is null or FetchedAt < DATE_ADD(UTC_TIMESTAMP(), INTERVAL @timeout SECOND))
-and Queue in @queues
-limit 1;
-delete from JobQueue
-where (FetchedAt is null or FetchedAt < DATE_ADD(UTC_TIMESTAMP(), INTERVAL @timeout SECOND))
-and Queue in @queues
-limit 1";
 
             do
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
                 connection = _storage.CreateAndOpenConnection();
-                transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted);
-
+                
                 try
                 {
-                    fetchedJob = connection.Query<FetchedJob>(
-                               fetchJobSqlTemplate,
-                               new { queues = queues, timeout = _options.InvisibilityTimeout.Negate().TotalSeconds },
-                               transaction)
-                               .SingleOrDefault();
+                    using (new MySqlDistributedLock(_storage, "JobQueue", TimeSpan.FromSeconds(30)))
+                    {
+                        fetchedJob =
+                        connection
+                            .Query<FetchedJob>(
+                                "select Id, JobId, Queue " +
+                                "from JobQueue " +
+                                "where (FetchedAt is null or FetchedAt < DATE_ADD(UTC_TIMESTAMP(), INTERVAL @timeout SECOND)) " +
+                                "   and Queue in @queues " +
+                                "limit 1;",
+                                new
+                                {
+                                    queues = queues,
+                                    timeout = _options.InvisibilityTimeout.Negate().TotalSeconds
+                                })
+                            .SingleOrDefault();
+
+                        if (fetchedJob != null)
+                        {
+                            connection
+                                .Execute(
+                                    "update JobQueue set FetchedAt = @fetchedAt where Id = @id",
+                                    new {fetchedAt = DateTime.UtcNow, id = fetchedJob.Id});
+                        }
+                    }
                 }
-                catch (MySqlException)
+                catch (MySqlException ex)
                 {
-                    transaction.Dispose();
+                    Logger.ErrorException(ex.Message, ex);
                     _storage.ReleaseConnection(connection);
                     throw;
                 }
 
                 if (fetchedJob == null)
                 {
-                    transaction.Rollback();
-                    transaction.Dispose();
                     _storage.ReleaseConnection(connection);
 
                     cancellationToken.WaitHandle.WaitOne(_options.QueuePollInterval);
@@ -79,26 +83,13 @@ limit 1";
                 }
             } while (fetchedJob == null);
 
-            return new MySqlFetchedJob(
-                _storage,
-                connection,
-                transaction,
-                fetchedJob.JobId.ToString(CultureInfo.InvariantCulture),
-                fetchedJob.Queue);
+            return new MySqlFetchedJob(_storage, connection, fetchedJob);
         }
 
         public void Enqueue(IDbConnection connection, string queue, string jobId)
         {
             Logger.TraceFormat("Enqueue JobId={0} Queue={1}", jobId, queue);
-            connection.Execute("insert into JobQueue (JobId, Queue) values (@jobId, @queue)", new { jobId, queue });
-        }
-
-        [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
-        private class FetchedJob
-        {
-            public int Id { get; set; }
-            public int JobId { get; set; }
-            public string Queue { get; set; }
+            connection.Execute("insert into JobQueue (JobId, Queue) values (@jobId, @queue)", new {jobId, queue});
         }
     }
 }

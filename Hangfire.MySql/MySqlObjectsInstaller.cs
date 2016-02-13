@@ -14,6 +14,12 @@ namespace Hangfire.MySql
         {
             if (connection == null) throw new ArgumentNullException("connection");
 
+            if (TablesExists(connection))
+            {
+                Log.Info("DB tables already exist. Exit install");
+                return;
+            }
+
             Log.Info("Start installing Hangfire SQL objects...");
 
             var script = GetStringResource(
@@ -23,6 +29,11 @@ namespace Hangfire.MySql
             connection.Execute(script);
 
             Log.Info("Hangfire SQL objects installed.");
+        }
+
+        private static bool TablesExists(MySqlConnection connection)
+        {
+            return connection.ExecuteScalar<string>("SHOW TABLES LIKE 'Job';") != null;            
         }
 
         private static string GetStringResource(Assembly assembly, string resourceName)

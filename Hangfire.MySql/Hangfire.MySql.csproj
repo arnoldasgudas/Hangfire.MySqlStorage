@@ -60,6 +60,7 @@
     <Compile Include="CountersAggregator.cs" />
     <Compile Include="Entities\SqlState.cs" />
     <Compile Include="ExpirationManager.cs" />
+    <Compile Include="JobQueue\FetchedJob.cs" />
     <Compile Include="JobQueue\IPersistentJobQueueProvider.cs" />
     <Compile Include="JobQueue\IPersistentJobQueueMonitoringApi.cs" />
     <Compile Include="JobQueue\EnqueuedAndFetchedCountDto.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="JobQueue\MySqlJobQueueMonitoringApi.cs" />
     <Compile Include="JobQueue\MySqlJobQueueProvider.cs" />
     <Compile Include="MySqlDistributedLock.cs" />
+    <Compile Include="MySqlDistributedLockException.cs" />
     <Compile Include="MySqlObjectsInstaller.cs" />
     <Compile Include="MySqlStorage.cs" />
     <Compile Include="MySqlStorageConnection.cs" />

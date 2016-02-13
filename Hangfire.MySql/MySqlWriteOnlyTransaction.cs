@@ -19,7 +19,6 @@ namespace Hangfire.MySql
 
         private readonly Queue<Action<MySqlConnection>> _commandQueue
             = new Queue<Action<MySqlConnection>>();
-        private readonly SortedSet<string> _lockedResources = new SortedSet<string>();
 
         public MySqlWriteOnlyTransaction(MySqlStorage storage)
         {
@@ -32,15 +31,19 @@ namespace Hangfire.MySql
         {
             Logger.TraceFormat("ExpireJob jobId={0}",jobId);
 
+            AcquireJobLock();
+
             QueueCommand(x => 
                 x.Execute(
                     "update Job set ExpireAt = @expireAt where Id = @id",
                     new { expireAt = DateTime.UtcNow.Add(expireIn), id = jobId }));
         }
-
+        
         public override void PersistJob(string jobId)
         {
             Logger.TraceFormat("PersistJob jobId={0}", jobId);
+
+            AcquireJobLock();
 
             QueueCommand(x => 
                 x.Execute(
@@ -52,6 +55,8 @@ namespace Hangfire.MySql
         {
             Logger.TraceFormat("SetJobState jobId={0}", jobId);
 
+            AcquireStateLock();
+            AcquireJobLock();
             QueueCommand(x => x.Execute(
                 "insert into State (JobId, Name, Reason, CreatedAt, Data) " +
                 "values (@jobId, @name, @reason, @createdAt, @data); " +
@@ -71,6 +76,7 @@ namespace Hangfire.MySql
         {
             Logger.TraceFormat("AddJobState jobId={0}, state={1}", jobId, state);
 
+            AcquireStateLock();
             QueueCommand(x => x.Execute(
                 "insert into State (JobId, Name, Reason, CreatedAt, Data) " +
                 "values (@jobId, @name, @reason, @createdAt, @data)",
@@ -98,6 +104,7 @@ namespace Hangfire.MySql
         {
             Logger.TraceFormat("IncrementCounter key={0}", key);
 
+            AcquireCounterLock();
             QueueCommand(x => 
                 x.Execute(
                     "insert into Counter (`Key`, `Value`) values (@key, @value)",
@@ -105,10 +112,12 @@ namespace Hangfire.MySql
             
         }
 
+
         public override void IncrementCounter(string key, TimeSpan expireIn)
         {
             Logger.TraceFormat("IncrementCounter key={0}, expireIn={1}", key, expireIn);
 
+            AcquireCounterLock();
             QueueCommand(x => 
                 x.Execute(
                     "insert into Counter (`Key`, `Value`, `ExpireAt`) values (@key, @value, @expireAt)",
@@ -119,6 +128,7 @@ namespace Hangfire.MySql
         {
             Logger.TraceFormat("DecrementCounter key={0}", key);
 
+            AcquireCounterLock();
             QueueCommand(x => 
                 x.Execute(
                     "insert into Counter (`Key`, `Value`) values (@key, @value)",
@@ -129,6 +139,7 @@ namespace Hangfire.MySql
         {
             Logger.TraceFormat("DecrementCounter key={0} expireIn={1}", key, expireIn);
 
+            AcquireCounterLock();
             QueueCommand(x => 
                 x.Execute(
                     "insert into Counter (`Key`, `Value`, `ExpireAt`) values (@key, @value, @expireAt)",
@@ -230,7 +241,8 @@ namespace Hangfire.MySql
 
             AcquireListLock();
             QueueCommand(x => x.Execute(
-                @"delete lst
+                @"
+delete lst
 from List lst
 	inner join (SELECT tmp.Id, @rownum := @rownum + 1 AS rank
 		  		FROM List tmp, 
@@ -247,7 +259,9 @@ where lst.Key = @key
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireHashLock();
-            QueueCommand(x => x.Execute("update Hash set ExpireAt = null where `Key` = @key", new { key = key }));
+            QueueCommand(x => 
+                x.Execute(
+                    "update Hash set ExpireAt = null where `Key` = @key", new { key = key }));
         }
 
         public override void PersistSet(string key)
@@ -257,7 +271,9 @@ where lst.Key = @key
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireSetLock();
-            QueueCommand(x => x.Execute("update `Set` set ExpireAt = null where `Key` = @key", new { key = key }));
+            QueueCommand(x => 
+                x.Execute(
+                    "update `Set` set ExpireAt = null where `Key` = @key", new { key = key }));
         }
 
         public override void RemoveSet(string key)
@@ -267,7 +283,9 @@ where lst.Key = @key
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireSetLock();
-            QueueCommand(x => x.Execute("delete from `Set` where `Key` = @key", new { key = key }));
+            QueueCommand(x => 
+                x.Execute(
+                    "delete from `Set` where `Key` = @key", new { key = key }));
         }
 
         public override void PersistList(string key)
@@ -277,7 +295,9 @@ where lst.Key = @key
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireListLock();
-            QueueCommand(x => x.Execute("update List set ExpireAt = null where `Key` = @key", new { key = key }));
+            QueueCommand(x => 
+                x.Execute(
+                    "update List set ExpireAt = null where `Key` = @key", new { key = key }));
         }
 
         public override void SetRangeInHash(string key, IEnumerable<KeyValuePair<string, string>> keyValuePairs)
@@ -316,7 +336,8 @@ where lst.Key = @key
             if (key == null) throw new ArgumentNullException("key");
 
             AcquireHashLock();
-            QueueCommand(x => x.Execute("delete from Hash where `Key` = @key", new { key }));
+            QueueCommand(x => x.Execute(
+                "delete from Hash where `Key` = @key", new { key }));
         }
 
         public override void Commit()
@@ -324,15 +345,6 @@ where lst.Key = @key
             _storage.UseTransaction(connection =>
             {
                 connection.EnlistTransaction(Transaction.Current);
-                
-                //todo: lock resources
-                //if (_lockedResources.Count > 0)
-                //{
-                //    connection.Execute(
-                //        "set nocount on;" +
-                //        "exec sp_getapplock @Resource=@resource, @LockMode=N'Exclusive'",
-                //        _lockedResources.Select(x => new { resource = x }));
-                //}
 
                 foreach (var command in _commandQueue)
                 {
@@ -345,25 +357,38 @@ where lst.Key = @key
         {
             _commandQueue.Enqueue(action);
         }
+        
+        private void AcquireJobLock()
+        {
+            AcquireLock(String.Format("Job"));
+        }
 
         private void AcquireSetLock()
         {
-            AcquireLock(String.Format("Hangfire:Set:Lock"));
+            AcquireLock(String.Format("Set"));
         }
         
         private void AcquireListLock()
         {
-            AcquireLock(String.Format("Hangfire:List:Lock"));
+            AcquireLock(String.Format("List"));
         }
 
         private void AcquireHashLock()
         {
-            AcquireLock(String.Format("Hangfire:Hash:Lock"));
+            AcquireLock(String.Format("Hash"));
+        }
+        
+        private void AcquireStateLock()
+        {
+            AcquireLock(String.Format("State"));
         }
 
+        private void AcquireCounterLock()
+        {
+            AcquireLock(String.Format("Counter"));
+        }
         private void AcquireLock(string resource)
         {
-            _lockedResources.Add(resource);
         }
     }
 }

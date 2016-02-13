@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using Dapper;
 using Hangfire.MySql.JobQueue;
+using Moq;
 using MySql.Data.MySqlClient;
 using Xunit;
 
@@ -11,6 +12,13 @@ namespace Hangfire.MySql.Tests.JobQueue
     public class MySqlJobQueueTests : IClassFixture<TestDatabaseFixture>
     {
         private static readonly string[] DefaultQueues = { "default" };
+        private readonly Mock<MySqlStorage> _storage;
+
+        public MySqlJobQueueTests()
+        {
+            var options = new MySqlStorageOptions { PrepareSchemaIfNecessary = false };
+            _storage = new Mock<MySqlStorage>(ConnectionUtils.GetConnectionString(), options);
+        }
 
         [Fact]
         public void Ctor_ThrowsAnException_WhenStorageIsNull()
@@ -25,7 +33,7 @@ namespace Hangfire.MySql.Tests.JobQueue
         public void Ctor_ThrowsAnException_WhenOptionsValueIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new MySqlJobQueue(new MySqlStorage(ConnectionUtils.GetConnectionString()), null));
+                () => new MySqlJobQueue(_storage.Object, null));
 
             Assert.Equal("options", exception.ParamName);
         }
@@ -135,6 +143,8 @@ values (last_insert_id(), @queue)";
                 var payload = queue.Dequeue(
                     DefaultQueues,
                     CreateTimingOutCancellationToken());
+
+                payload.RemoveFromQueue();
 
                 // Assert
                 Assert.NotNull(payload);

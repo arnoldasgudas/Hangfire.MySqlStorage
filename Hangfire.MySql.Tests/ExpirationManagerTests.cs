@@ -56,7 +56,7 @@ namespace Hangfire.MySql.Tests
         {
             using (var connection = CreateConnection())
             {
-                var entryId = CreateExpirationEntry(connection, DateTime.Now.AddMonths(1));
+                var entryId = CreateExpirationEntry(connection, DateTime.UtcNow.AddMonths(1));
                 var manager = CreateManager(connection);
 
                 manager.Execute(_token);
@@ -71,10 +71,10 @@ namespace Hangfire.MySql.Tests
             using (var connection = CreateConnection())
             {
                 // Arrange
-                const string createSql = @"
-insert into AggregatedCounter (`Key`, Value, ExpireAt) 
-values ('key', 1, @expireAt)";
-                connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
+                connection
+                    .Execute(
+                        "insert into AggregatedCounter (`Key`, Value, ExpireAt) values ('key', 1, @expireAt)", 
+                        new { expireAt = DateTime.UtcNow.AddMonths(-1) });
 
                 var manager = CreateManager(connection);
 
@@ -92,10 +92,10 @@ values ('key', 1, @expireAt)";
             using (var connection = CreateConnection())
             {
                 // Arrange
-                const string createSql = @"
-insert into Job (InvocationData, Arguments, CreatedAt, ExpireAt) 
-values ('', '', UTC_TIMESTAMP(), @expireAt)";
-                connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
+                connection.Execute(
+                    "insert into Job (InvocationData, Arguments, CreatedAt, ExpireAt) " +
+                    "values ('', '', UTC_TIMESTAMP(), @expireAt)", 
+                    new { expireAt = DateTime.UtcNow.AddMonths(-1) });
 
                 var manager = CreateManager(connection);
 
@@ -113,10 +113,9 @@ values ('', '', UTC_TIMESTAMP(), @expireAt)";
             using (var connection = CreateConnection())
             {
                 // Arrange
-                const string createSql = @"
-insert into List (`Key`, ExpireAt) 
-values ('key', @expireAt)";
-                connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
+                connection.Execute(
+                    "insert into List (`Key`, ExpireAt) values ('key', @expireAt)", 
+                    new { expireAt = DateTime.UtcNow.AddMonths(-1) });
 
                 var manager = CreateManager(connection);
 
@@ -134,10 +133,9 @@ values ('key', @expireAt)";
             using (var connection = CreateConnection())
             {
                 // Arrange
-                const string createSql = @"
-insert into `Set` (`Key`, Score, Value, ExpireAt) 
-values ('key', 0, '', @expireAt)";
-                connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
+                connection.Execute(
+                    "insert into `Set` (`Key`, Score, Value, ExpireAt) values ('key', 0, '', @expireAt)", 
+                    new { expireAt = DateTime.UtcNow.AddMonths(-1) });
 
                 var manager = CreateManager(connection);
 
@@ -157,7 +155,8 @@ values ('key', 0, '', @expireAt)";
                 // Arrange
                 const string createSql = @"
 insert into Hash (`Key`, Field, Value, ExpireAt) 
-values ('key', 'field', '', @expireAt)";
+values ('key1', 'field', '', @expireAt),
+       ('key2', 'field', '', @expireAt)";
                 connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
 
                 var manager = CreateManager(connection);

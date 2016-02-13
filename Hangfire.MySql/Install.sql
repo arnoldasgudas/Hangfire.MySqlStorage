@@ -41,10 +41,8 @@ CREATE TABLE `AggregatedCounter` (
 -- Table structure for `DistributedLock`
 -- ----------------------------
 CREATE TABLE `DistributedLock` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Resource` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_DistributedLock_Resource` (`Resource`)
+  `Resource` varchar(100) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
