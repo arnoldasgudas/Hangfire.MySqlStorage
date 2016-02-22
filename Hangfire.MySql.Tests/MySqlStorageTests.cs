@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Transactions;
 using Xunit;
 
 namespace Hangfire.MySql.Tests
@@ -63,6 +64,13 @@ namespace Hangfire.MySql.Tests
             Assert.Contains(typeof(ExpirationManager), componentTypes);
         }
 
+        [Fact, CleanDatabase(isolationLevel: IsolationLevel.ReadUncommitted)]
+        public void GetMonitoringApi_ReturnsNonNullInstance()
+        {
+            var storage = CreateStorage();
+            var api = storage.GetMonitoringApi();
+            Assert.NotNull(api);
+        }
 
         private MySqlStorage CreateStorage()
         {

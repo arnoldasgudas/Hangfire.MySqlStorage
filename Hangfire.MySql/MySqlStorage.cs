@@ -8,6 +8,7 @@ using System.Transactions;
 using Hangfire.Annotations;
 using Hangfire.Logging;
 using Hangfire.MySql.JobQueue;
+using Hangfire.MySql.Monitoring;
 using Hangfire.Server;
 using Hangfire.Storage;
 using MySql.Data.MySqlClient;
@@ -138,7 +139,7 @@ namespace Hangfire.MySql
 
         public override IMonitoringApi GetMonitoringApi()
         {
-            throw new System.NotImplementedException();
+            return new MySqlMonitoringApi(this, _options.DashboardJobListLimit);
         }
 
         public override IStorageConnection GetConnection()

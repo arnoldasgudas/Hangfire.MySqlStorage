@@ -58,6 +58,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CountersAggregator.cs" />
+    <Compile Include="Entities\JobParameter.cs" />
+    <Compile Include="Entities\SqlHash.cs" />
     <Compile Include="Entities\SqlState.cs" />
     <Compile Include="ExpirationManager.cs" />
     <Compile Include="JobQueue\FetchedJob.cs" />
@@ -69,6 +71,9 @@
     <Compile Include="JobQueue\MySqlJobQueue.cs" />
     <Compile Include="JobQueue\MySqlJobQueueMonitoringApi.cs" />
     <Compile Include="JobQueue\MySqlJobQueueProvider.cs" />
+    <Compile Include="Monitoring\MySqlMonitoringApi.cs" />
+    <Compile Include="Entities\SqlJob.cs" />
+    <Compile Include="Entities\Server.cs" />
     <Compile Include="MySqlDistributedLock.cs" />
     <Compile Include="MySqlDistributedLockException.cs" />
     <Compile Include="MySqlObjectsInstaller.cs" />
