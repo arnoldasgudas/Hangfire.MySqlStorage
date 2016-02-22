@@ -23,7 +23,7 @@ namespace Hangfire.MySql.Tests
             Assert.Throws<ArgumentNullException>(() => new ExpirationManager(null));
         }
 
-        [Fact]
+        [Fact, CleanDatabase]
         public void Execute_RemovesOutdatedRecords()
         {
             using (var connection = CreateConnection())
@@ -37,7 +37,7 @@ namespace Hangfire.MySql.Tests
             }
         }
 
-        [Fact]
+        [Fact, CleanDatabase]
         public void Execute_DoesNotRemoveEntries_WithNoExpirationTimeSet()
         {
             using (var connection = CreateConnection())
@@ -51,7 +51,7 @@ namespace Hangfire.MySql.Tests
             }
         }
 
-        [Fact]
+        [Fact, CleanDatabase]
         public void Execute_DoesNotRemoveEntries_WithFreshExpirationTime()
         {
             using (var connection = CreateConnection())
@@ -65,7 +65,7 @@ namespace Hangfire.MySql.Tests
             }
         }
 
-        [Fact]
+        [Fact, CleanDatabase]
         public void Execute_Processes_AggregatedCounterTable()
         {
             using (var connection = CreateConnection())
@@ -86,7 +86,7 @@ namespace Hangfire.MySql.Tests
             }
         }
 
-        [Fact]
+        [Fact, CleanDatabase]
         public void Execute_Processes_JobTable()
         {
             using (var connection = CreateConnection())
@@ -107,7 +107,7 @@ namespace Hangfire.MySql.Tests
             }
         }
 
-        [Fact]
+        [Fact, CleanDatabase]
         public void Execute_Processes_ListTable()
         {
             using (var connection = CreateConnection())
@@ -127,7 +127,7 @@ namespace Hangfire.MySql.Tests
             }
         }
 
-        [Fact]
+        [Fact, CleanDatabase]
         public void Execute_Processes_SetTable()
         {
             using (var connection = CreateConnection())
@@ -147,7 +147,7 @@ namespace Hangfire.MySql.Tests
             }
         }
 
-        [Fact]
+        [Fact, CleanDatabase]
         public void Execute_Processes_HashTable()
         {
             using (var connection = CreateConnection())
