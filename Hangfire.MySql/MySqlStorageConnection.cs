@@ -44,41 +44,37 @@ namespace Hangfire.MySql
 
             return _storage.UseConnection(connection =>
             {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText =
+                var jobId = connection.Query<int>(
                     "insert into Job (InvocationData, Arguments, CreatedAt, ExpireAt) " +
                     "values (@invocationData, @arguments, @createdAt, @expireAt); " +
-                    "select last_insert_id();";
-                cmd.Parameters.AddWithValue("@invocationData", JobHelper.ToJson(invocationData));
-                cmd.Parameters.AddWithValue("@arguments", invocationData.Arguments);
-                cmd.Parameters.AddWithValue("@createdAt", createdAt);
-                cmd.Parameters.AddWithValue("@expireAt", createdAt.Add(expireIn));
-                var jobId = Convert.ToString(cmd.ExecuteScalar());
-
-                Logger.DebugFormat("Inserted into Job, jobId={0}", jobId);
+                    "select last_insert_id();",
+                    new
+                    {
+                        invocationData = JobHelper.ToJson(invocationData),
+                        arguments = invocationData.Arguments,
+                        createdAt = createdAt,
+                        expireAt = createdAt.Add(expireIn)
+                    }).Single().ToString();
 
                 if (parameters.Count > 0)
                 {
-                    var insertParameterSql =
-                        new StringBuilder("insert into JobParameter (JobId, Name, Value) values ");
-
-                    var parameterIndex = 0;
+                    var parameterArray = new object[parameters.Count];
+                    int parameterIndex = 0;
                     foreach (var parameter in parameters)
                     {
-                        if (parameterIndex > 0)
+                        parameterArray[parameterIndex++] = new
                         {
-                            insertParameterSql.Append(",");
-                        }
-
-                        insertParameterSql.AppendFormat(" (@jobId{0}, @name{0}, @value{0}) ", parameterIndex);
-                        cmd.Parameters.AddWithValue("@jobId" + parameterIndex, jobId);
-                        cmd.Parameters.AddWithValue("@name" + parameterIndex, parameter.Key);
-                        cmd.Parameters.AddWithValue("@value" + parameterIndex, parameter.Value);
-                        parameterIndex++;
+                            jobId = jobId,
+                            name = parameter.Key,
+                            value = parameter.Value
+                        };
                     }
-                    cmd.CommandText = insertParameterSql.ToString();
-                    cmd.ExecuteNonQuery();
+
+                    connection.Execute(
+                        "insert into JobParameter (JobId, Name, Value) values (@jobId, @name, @value)", 
+                        parameterArray);
                 }
+
                 return jobId;
             });
         }
@@ -110,15 +106,11 @@ namespace Hangfire.MySql
 
             _storage.UseConnection(connection =>
             {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText =
+                connection.Execute(
                     "insert into JobParameter (JobId, Name, Value) " +
                     "value (@jobId, @name, @value) " +
-                    "on duplicate key update Value = @value ";
-                cmd.Parameters.AddWithValue("@jobId", id);
-                cmd.Parameters.AddWithValue("@name", name);
-                cmd.Parameters.AddWithValue("@value", value);
-                cmd.ExecuteNonQuery(); 
+                    "on duplicate key update Value = @value ",
+                    new { jobId = id, name, value });
             });
         }
 
@@ -127,60 +119,33 @@ namespace Hangfire.MySql
             if (id == null) throw new ArgumentNullException("id");
             if (name == null) throw new ArgumentNullException("name");
 
-            string result = null;
-
-            return _storage.UseConnection(connection =>
-            {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText =
+            return _storage.UseConnection(connection => 
+                connection.Query<string>(
                     "select Value " +
                     "from JobParameter " +
-                    "where JobId = @id and Name = @name";
-                cmd.Parameters.AddWithValue("@id", id);
-                cmd.Parameters.AddWithValue("@name", name);
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        result = reader.GetString("Value");
-                    }
-                }
-                return result;
-            });
+                    "where JobId = @id and Name = @name",
+                    new {id = id, name = name}).SingleOrDefault());
         }
 
         public override JobData GetJobData(string jobId)
         {
             if (jobId == null) throw new ArgumentNullException("jobId");
 
-            string invocationDataString = null;
-            string arguments = null;
-            DateTime createdAt = DateTime.MinValue;
-            string state = null;
-
             return _storage.UseConnection(connection =>
             {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText =
-                    "select InvocationData, StateName, Arguments, CreatedAt " +
-                    "from Job " +
-                    "where Id = @id";
-                cmd.Parameters.AddWithValue("@id", jobId);
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        invocationDataString = reader.GetString("InvocationData");
-                        arguments = reader.GetString("Arguments");
-                        createdAt = reader.GetDateTime("CreatedAt");
-                        state = reader.GetString("StateName");
-                    }
-                }
+                var jobData = 
+                    connection
+                        .Query<SqlJob>(
+                            "select InvocationData, StateName, Arguments, CreatedAt " +
+                            "from Job " +
+                            "where Id = @id", 
+                            new {id = jobId})
+                        .SingleOrDefault();
 
-                if (string.IsNullOrEmpty(invocationDataString)) return null;
+                if (jobData == null) return null;
 
-                var invocationData = JobHelper.FromJson<InvocationData>(invocationDataString);
-                invocationData.Arguments = arguments;
+                var invocationData = JobHelper.FromJson<InvocationData>(jobData.InvocationData);
+                invocationData.Arguments = jobData.Arguments;
 
                 Job job = null;
                 JobLoadException loadException = null;
@@ -191,15 +156,14 @@ namespace Hangfire.MySql
                 }
                 catch (JobLoadException ex)
                 {
-                    Logger.ErrorException(ex.Message, ex);
                     loadException = ex;
                 }
 
                 return new JobData
                 {
                     Job = job,
-                    State = state,
-                    CreatedAt = createdAt,
+                    State = jobData.StateName,
+                    CreatedAt = jobData.CreatedAt,
                     LoadException = loadException
                 };
             });
@@ -209,41 +173,29 @@ namespace Hangfire.MySql
         {
             if (jobId == null) throw new ArgumentNullException("jobId");
 
-            SqlState sqlState = null;
-
             return _storage.UseConnection(connection =>
             {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText =
-                    "select s.Name, s.Reason, s.Data " +
-                    "from State s inner join Job j on j.StateId = s.Id " +
-                    "where j.Id = @jobId";
-                cmd.Parameters.AddWithValue("@jobId", jobId);
-                using (var reader = cmd.ExecuteReader())
+                var sqlState = 
+                    connection.Query<SqlState>(
+                        "select s.Name, s.Reason, s.Data " +
+                        "from State s inner join Job j on j.StateId = s.Id " +
+                        "where j.Id = @jobId", 
+                        new { jobId = jobId }).SingleOrDefault();
+                if (sqlState == null)
                 {
-                    if (reader.Read())
-                    {
-                        sqlState =
-                            new SqlState
-                            {
-                                Name = reader.GetString("Name"),
-                                Reason = reader.GetString("Reason"),
-                                Data = reader.GetString("Data")
-                            };
-                    }
+                    return null;
                 }
-                return
-                    sqlState == null
-                    ? null
-                    : new StateData
-                    {
-                        Name = sqlState.Name,
-                        Reason = sqlState.Reason,
-                        Data =
-                            new Dictionary<string, string>(
-                                JobHelper.FromJson<Dictionary<string, string>>(sqlState.Data),
-                                StringComparer.OrdinalIgnoreCase)
-                    };
+
+                var data = new Dictionary<string, string>(
+                    JobHelper.FromJson<Dictionary<string, string>>(sqlState.Data),
+                    StringComparer.OrdinalIgnoreCase);
+
+                return new StateData
+                {
+                    Name = sqlState.Name,
+                    Reason = sqlState.Reason,
+                    Data = data
+                };
             });
         }
 
@@ -254,23 +206,21 @@ namespace Hangfire.MySql
 
             _storage.UseConnection(connection =>
             {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText =
+                connection.Execute(
                     "INSERT INTO Server (Id, Data, LastHeartbeat) " +
                     "VALUE (@Id, @Data, @Heartbeat) " +
-                    "ON DUPLICATE KEY UPDATE Data = @Data, LastHeartbeat = @Heartbeat";
-                cmd.Parameters.AddWithValue("@Id", serverId);
-                cmd.Parameters.AddWithValue(
-                    "@Data", 
-                    JobHelper.ToJson(
-                        new ServerData
+                    "ON DUPLICATE KEY UPDATE Data = @Data, LastHeartbeat = @Heartbeat",
+                    new
+                    {
+                        id = serverId,
+                        data = JobHelper.ToJson(new ServerData
                         {
                             WorkerCount = context.WorkerCount,
                             Queues = context.Queues,
                             StartedAt = DateTime.UtcNow,
-                        }));
-                cmd.Parameters.AddWithValue("@Heartbeat", DateTime.UtcNow);
-                cmd.ExecuteNonQuery();
+                        }),
+                        heartbeat = DateTime.UtcNow
+                    });
             });
         }
 
@@ -280,10 +230,9 @@ namespace Hangfire.MySql
 
             _storage.UseConnection(connection =>
             {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = "delete from Server where Id = @id";
-                cmd.Parameters.AddWithValue("@id", serverId);
-                cmd.ExecuteNonQuery();
+                connection.Execute(
+                    "delete from Server where Id = @id",
+                    new { id = serverId });
             });
         }
 
@@ -293,11 +242,9 @@ namespace Hangfire.MySql
 
             _storage.UseConnection(connection =>
             {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = "update Server set LastHeartbeat = @now where Id = @id";
-                cmd.Parameters.AddWithValue("@id", serverId);
-                cmd.Parameters.AddWithValue("@now", DateTime.UtcNow);
-                cmd.ExecuteNonQuery();
+                connection.Execute(
+                    "update Server set LastHeartbeat = @now where Id = @id",
+                    new { now = DateTime.UtcNow, id = serverId });
             });
         }
 
@@ -308,80 +255,56 @@ namespace Hangfire.MySql
                 throw new ArgumentException("The `timeOut` value must be positive.", "timeOut");
             }
 
-            return _storage.UseConnection(connection =>
-            {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = "delete from Server where LastHeartbeat < @timeOutAt";
-                cmd.Parameters.AddWithValue("@timeOutAt", DateTime.UtcNow.Add(timeOut.Negate()));
-                return cmd.ExecuteNonQuery();
-            });
+            return
+                _storage.UseConnection(connection =>
+                    connection.Execute(
+                        "delete from Server where LastHeartbeat < @timeOutAt",
+                        new {timeOutAt = DateTime.UtcNow.Add(timeOut.Negate())}));
         }
 
         public override long GetSetCount(string key)
         {
             if (key == null) throw new ArgumentNullException("key");
 
-            return _storage.UseConnection(connection =>
-            {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = "select count(`Key`) from `Set` where `Key` = @key";
-                cmd.Parameters.AddWithValue("@key", key);
-                return (long)cmd.ExecuteScalar();
-            });
+            return
+                _storage.UseConnection(connection =>
+                    connection.Query<int>(
+                        "select count(`Key`) from `Set` where `Key` = @key",
+                        new {key = key}).First());
         }
 
         public override List<string> GetRangeFromSet(string key, int startingFrom, int endingAt)
         {
             if (key == null) throw new ArgumentNullException("key");
 
-            var result = new List<string>();
             return _storage.UseConnection(connection =>
-            {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = @"
+                connection
+                    .Query<string>(@"
 select `Value` 
 from `Set` s 
     inner join (
 	    select tmp.Id, @rownum := @rownum + 1 AS rank
 	    from `Set` tmp,
-            (select @rownum := -1) r ) ranked on ranked.Id = s.Id
+            (select @rownum := 0) r ) ranked on ranked.Id = s.Id
 where s.`Key` = @key 
-    and  ranked.rank between @startingFrom and @endingAt";
-                cmd.Parameters.AddWithValue("@key", key);
-                cmd.Parameters.AddWithValue("@startingFrom", startingFrom);
-                cmd.Parameters.AddWithValue("@endingAt", endingAt);
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        result.Add(reader.GetString("Value"));
-                    }
-                }
-
-                return result;
-            });
+    and  ranked.rank between @startingFrom and @endingAt",
+                        new {key = key, startingFrom = startingFrom + 1, endingAt = endingAt + 1})
+                    .ToList());
         }
 
         public override HashSet<string> GetAllItemsFromSet(string key)
         {
             if (key == null) throw new ArgumentNullException("key");
 
-            var result = new HashSet<string>();
-            return _storage.UseConnection(connection =>
-            {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = "select Value from `Set` where `Key` = @key";
-                cmd.Parameters.AddWithValue("@key", key);
-                using (var reader = cmd.ExecuteReader())
+            return
+                _storage.UseConnection(connection =>
                 {
-                    while (reader.Read())
-                    {
-                        result.Add(reader.GetString("Value"));
-                    }
-                }
+                    var result = connection.Query<string>(
+                        "select Value from `Set` where `Key` = @key",
+                        new {key});
 
-                return result;
-            });
+                    return new HashSet<string>(result);
+                });
         }
 
         public override string GetFirstByLowestScoreFromSet(string key, double fromScore, double toScore)
@@ -390,28 +313,16 @@ where s.`Key` = @key
             if (toScore < fromScore) 
                 throw new ArgumentException("The `toScore` value must be higher or equal to the `fromScore` value.");
 
-            return _storage.UseConnection(connection =>
-            {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText =
-                    "select Value " +
-                    "from `Set` " +
-                    "where `Key` = @key and Score between @from and @to " +
-                    "order by Score " +
-                    "limit 1";
-                cmd.Parameters.AddWithValue("@key", key);
-                cmd.Parameters.AddWithValue("@from", fromScore);
-                cmd.Parameters.AddWithValue("@to", toScore);
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return reader.GetString("Value");
-                    }
-                }
-                return null;
-            });
+            return
+                _storage.UseConnection(connection =>
+                    connection.Query<string>(
+                        "select Value " +
+                        "from `Set` " +
+                        "where `Key` = @key and Score between @from and @to " +
+                        "order by Score " +
+                        "limit 1",
+                        new {key, from = fromScore, to = toScore})
+                        .SingleOrDefault());
         }
 
         public override long GetCounter(string key)
@@ -559,19 +470,15 @@ order by Id desc";
             if (key == null) throw new ArgumentNullException("key");
             if (keyValuePairs == null) throw new ArgumentNullException("keyValuePairs");
 
-            _storage.UseConnection(connection =>
+            _storage.UseTransaction(connection =>
             {
                 foreach (var keyValuePair in keyValuePairs)
                 {
-                    var cmd = connection.CreateCommand();
-                    cmd.CommandText =
+                    connection.Execute(
                         "insert into Hash (`Key`, Field, Value) " +
                         "value (@key, @field, @value) " +
-                        "on duplicate key update Value = @value";
-                    cmd.Parameters.AddWithValue("@key", key);
-                    cmd.Parameters.AddWithValue("@field", keyValuePair.Key);
-                    cmd.Parameters.AddWithValue("@value", keyValuePair.Value);
-                    cmd.ExecuteNonQuery();
+                        "on duplicate key update Value = @value", 
+                        new { key = key, field = keyValuePair.Key, value = keyValuePair.Value });
                 }
             });
         }
@@ -580,20 +487,12 @@ order by Id desc";
         {
             if (key == null) throw new ArgumentNullException("key");
 
-            var result = new Dictionary<string, string>();
-
             return _storage.UseConnection(connection =>
             {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = "select Field, Value from Hash where `Key` = @key";
-                cmd.Parameters.AddWithValue("@key", key);
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        result.Add(reader.GetString("Field"), reader.GetString("Value"));
-                    }
-                }
+                var result = connection.Query<SqlHash>(
+                    "select Field, Value from Hash where `Key` = @key",
+                    new {key})
+                    .ToDictionary(x => x.Field, x => x.Value);
 
                 return result.Count != 0 ? result : null;
             });
