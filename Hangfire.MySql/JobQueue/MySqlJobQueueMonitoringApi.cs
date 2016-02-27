@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Transactions;
 using Dapper;
-using MySql.Data.MySqlClient;
 
 namespace Hangfire.MySql.JobQueue
 {
@@ -27,7 +25,7 @@ namespace Hangfire.MySql.JobQueue
             {
                 if (_queuesCache.Count == 0 || _cacheUpdated.Add(QueuesCacheTimeout) < DateTime.UtcNow)
                 {
-                    var result = UseTransaction(connection =>
+                    var result = _storage.UseConnection(connection =>
                     {
                         return connection.Query("select distinct(Queue) from JobQueue").Select(x => (string)x.Queue).ToList();
                     });
@@ -52,7 +50,7 @@ select r.JobId from (
 ) as r
 where r.rank between @start and @end;";
 
-            return UseTransaction(connection =>
+            return _storage.UseConnection(connection =>
                 connection.Query<int>(
                     sqlQuery,
                     new {queue = queue, start = @from + 1, end = @from + perPage}));
@@ -65,7 +63,7 @@ where r.rank between @start and @end;";
 
         public EnqueuedAndFetchedCountDto GetEnqueuedAndFetchedCount(string queue)
         {
-            return UseTransaction(connection =>
+            return _storage.UseConnection(connection =>
             {
                 var result = 
                     connection.Query<int>(
@@ -76,11 +74,6 @@ where r.rank between @start and @end;";
                     EnqueuedCount = result,
                 };
             });
-        }
-
-        private T UseTransaction<T>(Func<MySqlConnection, T> func)
-        {
-            return _storage.UseTransaction(func, IsolationLevel.ReadUncommitted);
         }
     }
 }
