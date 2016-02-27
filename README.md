@@ -1,5 +1,5 @@
 # Hangfire MySql Storage Implementation
-[![Latest version](https://img.shields.io/badge/nuget-v0.4.0-blue.svg)](https://www.nuget.org/packages/Hangfire.MySqlStorage/) 
+[![Latest version](https://img.shields.io/badge/nuget-v1.0.0-blue.svg)](https://www.nuget.org/packages/Hangfire.MySqlStorage/) 
 [![Official Site](https://img.shields.io/badge/site-hangfire.io-blue.svg)](http://hangfire.io)
 
 MySql storage implementation of [Hangfire](http://hangfire.io/) - fire-and-forget, delayed and recurring tasks runner for .NET. Scalable and reliable background job runner. Supports multiple servers, CPU and I/O intensive, long-running and short-running jobs.
@@ -51,7 +51,7 @@ Description of optional parameters:
 ## Dashboard
 Hangfire provides a dashboard
 ![Dashboard](https://camo.githubusercontent.com/f263ab4060a09e4375cc4197fb5bfe2afcacfc20/687474703a2f2f68616e67666972652e696f2f696d672f75692f64617368626f6172642d736d2e706e67)
-**Currently dashboard is under development**
+More info: [Hangfire Overview](http://hangfire.io/overview.html#integrated-monitoring-ui)
 
 ## Build
 Please use Visual Studio or any other tool of your choice to build the solution
