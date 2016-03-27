@@ -18,11 +18,11 @@ namespace Hangfire.MySql
 
         private static readonly string[] ProcessedTables =
         {
-            "AggregatedCounter",
-            "Job",
-            "List",
-            "Set",
-            "Hash",
+            MySqlStorageOptions.TablePrefix+"AggregatedCounter",
+            MySqlStorageOptions.TablePrefix+"Job",
+            MySqlStorageOptions.TablePrefix+"List",
+            MySqlStorageOptions.TablePrefix+"Set",
+            MySqlStorageOptions.TablePrefix+"Hash",
         };
 
         private readonly MySqlStorage _storage;

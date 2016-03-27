@@ -27,7 +27,7 @@ namespace Hangfire.MySql.JobQueue
                 {
                     var result = _storage.UseConnection(connection =>
                     {
-                        return connection.Query("select distinct(Queue) from JobQueue").Select(x => (string)x.Queue).ToList();
+                        return connection.Query("select distinct(Queue) from "+ MySqlStorageOptions .TablePrefix+ "JobQueue").Select(x => (string)x.Queue).ToList();
                     });
 
                     _queuesCache = result;
@@ -44,7 +44,7 @@ namespace Hangfire.MySql.JobQueue
 SET @rank=0;
 select r.JobId from (
   select jq.JobId, @rank := @rank+1 AS rank 
-  from JobQueue jq
+  from "+ MySqlStorageOptions.TablePrefix + @"JobQueue jq
   where jq.Queue = @queue
   order by jq.Id
 ) as r
@@ -67,7 +67,7 @@ where r.rank between @start and @end;";
             {
                 var result = 
                     connection.Query<int>(
-                        "select count(Id) from JobQueue where Queue = @queue", new { queue = queue }).Single();
+                        "select count(Id) from "+ MySqlStorageOptions.TablePrefix + "JobQueue where Queue = @queue", new { queue = queue }).Single();
 
                 return new EnqueuedAndFetchedCountDto
                 {
