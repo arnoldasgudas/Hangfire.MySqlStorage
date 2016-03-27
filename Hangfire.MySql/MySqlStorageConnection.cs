@@ -178,7 +178,7 @@ namespace Hangfire.MySql
                 var sqlState = 
                     connection.Query<SqlState>(
                         "select s.Name, s.Reason, s.Data " +
-                        "from "+ MySqlStorageOptions.TablePrefix + "State s inner join Job j on j.StateId = s.Id " +
+                        "from "+ MySqlStorageOptions.TablePrefix + "State s inner join "+MySqlStorageOptions.TablePrefix+"Job j on j.StateId = s.Id " +
                         "where j.Id = @jobId", 
                         new { jobId = jobId }).SingleOrDefault();
                 if (sqlState == null)
