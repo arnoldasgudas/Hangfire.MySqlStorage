@@ -29,6 +29,7 @@ namespace Hangfire.MySql.JobQueue
             _id = fetchedJob.Id;
             JobId = fetchedJob.JobId.ToString(CultureInfo.InvariantCulture);
             Queue = fetchedJob.Queue; 
+            
         }
 
         public void Dispose()
@@ -42,7 +43,7 @@ namespace Hangfire.MySql.JobQueue
 
             //todo: unit test
             _connection.Execute(
-                "delete from JobQueue " +
+                "delete from "+ MySqlStorageOptions.TablePrefix + "JobQueue " +
                 "where Id = @id",
                 new
                 {
@@ -56,7 +57,7 @@ namespace Hangfire.MySql.JobQueue
 
             //todo: unit test
             _connection.Execute(
-                "update JobQueue set FetchedAt = null " +
+                "update "+ MySqlStorageOptions.TablePrefix + "JobQueue set FetchedAt = null " +
                 "where Id = @id",
                 new
                 {

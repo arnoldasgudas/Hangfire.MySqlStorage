@@ -35,7 +35,7 @@ namespace Hangfire.MySql
 
             QueueCommand(x => 
                 x.Execute(
-                    "update Job set ExpireAt = @expireAt where Id = @id",
+                    "update "+ MySqlStorageOptions.TablePrefix + "Job set ExpireAt = @expireAt where Id = @id",
                     new { expireAt = DateTime.UtcNow.Add(expireIn), id = jobId }));
         }
         
@@ -47,7 +47,7 @@ namespace Hangfire.MySql
 
             QueueCommand(x => 
                 x.Execute(
-                    "update Job set ExpireAt = NULL where Id = @id",
+                    "update "+ MySqlStorageOptions.TablePrefix + "Job set ExpireAt = NULL where Id = @id",
                     new { id = jobId }));
         }
 
@@ -58,9 +58,9 @@ namespace Hangfire.MySql
             AcquireStateLock();
             AcquireJobLock();
             QueueCommand(x => x.Execute(
-                "insert into State (JobId, Name, Reason, CreatedAt, Data) " +
+                "insert into "+ MySqlStorageOptions.TablePrefix + "State (JobId, Name, Reason, CreatedAt, Data) " +
                 "values (@jobId, @name, @reason, @createdAt, @data); " +
-                "update Job set StateId = last_insert_id(), StateName = @name where Id = @id;",
+                "update "+ MySqlStorageOptions.TablePrefix + "Job set StateId = last_insert_id(), StateName = @name where Id = @id;",
                 new
                 {
                     jobId = jobId,
@@ -78,7 +78,7 @@ namespace Hangfire.MySql
 
             AcquireStateLock();
             QueueCommand(x => x.Execute(
-                "insert into State (JobId, Name, Reason, CreatedAt, Data) " +
+                "insert into "+ MySqlStorageOptions.TablePrefix + "State (JobId, Name, Reason, CreatedAt, Data) " +
                 "values (@jobId, @name, @reason, @createdAt, @data)",
                 new
                 {
@@ -107,7 +107,7 @@ namespace Hangfire.MySql
             AcquireCounterLock();
             QueueCommand(x => 
                 x.Execute(
-                    "insert into Counter (`Key`, `Value`) values (@key, @value)",
+                    "insert into "+ MySqlStorageOptions.TablePrefix + "Counter (`Key`, `Value`) values (@key, @value)",
                     new { key, value = +1 }));
             
         }
@@ -120,7 +120,7 @@ namespace Hangfire.MySql
             AcquireCounterLock();
             QueueCommand(x => 
                 x.Execute(
-                    "insert into Counter (`Key`, `Value`, `ExpireAt`) values (@key, @value, @expireAt)",
+                    "insert into "+ MySqlStorageOptions.TablePrefix + "Counter (`Key`, `Value`, `ExpireAt`) values (@key, @value, @expireAt)",
                     new { key, value = +1, expireAt = DateTime.UtcNow.Add(expireIn) }));
         }
 
@@ -131,7 +131,7 @@ namespace Hangfire.MySql
             AcquireCounterLock();
             QueueCommand(x => 
                 x.Execute(
-                    "insert into Counter (`Key`, `Value`) values (@key, @value)",
+                    "insert into "+ MySqlStorageOptions.TablePrefix + "Counter (`Key`, `Value`) values (@key, @value)",
                     new { key, value = -1 }));
         }
 
@@ -142,7 +142,7 @@ namespace Hangfire.MySql
             AcquireCounterLock();
             QueueCommand(x => 
                 x.Execute(
-                    "insert into Counter (`Key`, `Value`, `ExpireAt`) values (@key, @value, @expireAt)",
+                    "insert into "+ MySqlStorageOptions.TablePrefix + "Counter (`Key`, `Value`, `ExpireAt`) values (@key, @value, @expireAt)",
                     new { key, value = -1, expireAt = DateTime.UtcNow.Add(expireIn) }));
         }
 
@@ -157,7 +157,7 @@ namespace Hangfire.MySql
 
             AcquireSetLock();
             QueueCommand(x => x.Execute(
-                "INSERT INTO `Set` (`Key`, `Value`, `Score`) " +
+                "INSERT INTO `"+ MySqlStorageOptions.TablePrefix + "Set` (`Key`, `Value`, `Score`) " +
                 "VALUES (@Key, @Value, @Score) " +
                 "ON DUPLICATE KEY UPDATE `Score` = @Score",
                 new { key, value, score }));
@@ -173,7 +173,7 @@ namespace Hangfire.MySql
             AcquireSetLock();
             QueueCommand(x => 
                 x.Execute(
-                    "insert into `Set` (`Key`, Value, Score) values (@key, @value, 0.0)", 
+                    "insert into `"+ MySqlStorageOptions.TablePrefix + "Set` (`Key`, Value, Score) values (@key, @value, 0.0)", 
                     items.Select(value => new { key = key, value = value }).ToList()));
         }
 
@@ -184,7 +184,7 @@ namespace Hangfire.MySql
 
             AcquireSetLock();
             QueueCommand(x => x.Execute(
-                "delete from `Set` where `Key` = @key and Value = @value",
+                "delete from `"+ MySqlStorageOptions.TablePrefix + "Set` where `Key` = @key and Value = @value",
                 new { key, value }));
         }
 
@@ -197,7 +197,7 @@ namespace Hangfire.MySql
             AcquireSetLock();
             QueueCommand(x => 
                 x.Execute(
-                    "update `Set` set ExpireAt = @expireAt where `Key` = @key", 
+                    "update `"+ MySqlStorageOptions.TablePrefix + "Set` set ExpireAt = @expireAt where `Key` = @key", 
                     new { key = key, expireAt = DateTime.UtcNow.Add(expireIn) }));
         }
 
@@ -207,7 +207,7 @@ namespace Hangfire.MySql
 
             AcquireListLock();
             QueueCommand(x => x.Execute(
-                "insert into List (`Key`, Value) values (@key, @value)",
+                "insert into "+ MySqlStorageOptions.TablePrefix + "List (`Key`, Value) values (@key, @value)",
                 new { key, value }));
         }
 
@@ -221,7 +221,7 @@ namespace Hangfire.MySql
             AcquireListLock();
             QueueCommand(x => 
                 x.Execute(
-                    "update List set ExpireAt = @expireAt where `Key` = @key", 
+                    "update "+ MySqlStorageOptions.TablePrefix + "List set ExpireAt = @expireAt where `Key` = @key", 
                     new { key = key, expireAt = DateTime.UtcNow.Add(expireIn) }));
         }
 
@@ -231,7 +231,7 @@ namespace Hangfire.MySql
 
             AcquireListLock();
             QueueCommand(x => x.Execute(
-                "delete from List where `Key` = @key and Value = @value",
+                "delete from "+ MySqlStorageOptions.TablePrefix + "List where `Key` = @key and Value = @value",
                 new { key, value }));
         }
 
@@ -243,9 +243,9 @@ namespace Hangfire.MySql
             QueueCommand(x => x.Execute(
                 @"
 delete lst
-from List lst
+from "+ MySqlStorageOptions.TablePrefix + @"List lst
 	inner join (SELECT tmp.Id, @rownum := @rownum + 1 AS rank
-		  		FROM List tmp, 
+		  		FROM "+ MySqlStorageOptions.TablePrefix + @"List tmp, 
        				(SELECT @rownum := 0) r ) ranked on ranked.Id = lst.Id
 where lst.Key = @key
     and ranked.rank not between @start and @end",
@@ -261,7 +261,7 @@ where lst.Key = @key
             AcquireHashLock();
             QueueCommand(x => 
                 x.Execute(
-                    "update Hash set ExpireAt = null where `Key` = @key", new { key = key }));
+                    "update "+ MySqlStorageOptions.TablePrefix + "Hash set ExpireAt = null where `Key` = @key", new { key = key }));
         }
 
         public override void PersistSet(string key)
@@ -273,7 +273,7 @@ where lst.Key = @key
             AcquireSetLock();
             QueueCommand(x => 
                 x.Execute(
-                    "update `Set` set ExpireAt = null where `Key` = @key", new { key = key }));
+                    "update `"+ MySqlStorageOptions.TablePrefix + "Set` set ExpireAt = null where `Key` = @key", new { key = key }));
         }
 
         public override void RemoveSet(string key)
@@ -285,7 +285,7 @@ where lst.Key = @key
             AcquireSetLock();
             QueueCommand(x => 
                 x.Execute(
-                    "delete from `Set` where `Key` = @key", new { key = key }));
+                    "delete from `"+ MySqlStorageOptions.TablePrefix + "Set` where `Key` = @key", new { key = key }));
         }
 
         public override void PersistList(string key)
@@ -297,7 +297,7 @@ where lst.Key = @key
             AcquireListLock();
             QueueCommand(x => 
                 x.Execute(
-                    "update List set ExpireAt = null where `Key` = @key", new { key = key }));
+                    "update "+ MySqlStorageOptions.TablePrefix + "List set ExpireAt = null where `Key` = @key", new { key = key }));
         }
 
         public override void SetRangeInHash(string key, IEnumerable<KeyValuePair<string, string>> keyValuePairs)
@@ -310,7 +310,7 @@ where lst.Key = @key
             AcquireHashLock();
             QueueCommand(x => 
                 x.Execute(
-                    "insert into Hash (`Key`, Field, Value) " +
+                    "insert into "+ MySqlStorageOptions.TablePrefix + "Hash (`Key`, Field, Value) " +
                     "values (@key, @field, @value) " +
                     "on duplicate key update Value = @value",
                     keyValuePairs.Select(y => new { key = key, field = y.Key, value = y.Value })));
@@ -325,7 +325,7 @@ where lst.Key = @key
             AcquireHashLock();
             QueueCommand(x => 
                 x.Execute(
-                    "update `Hash` set ExpireAt = @expireAt where `Key` = @key", 
+                    "update `"+ MySqlStorageOptions.TablePrefix + "Hash` set ExpireAt = @expireAt where `Key` = @key", 
                     new { key = key, expireAt = DateTime.UtcNow.Add(expireIn) }));
         }
 
@@ -337,7 +337,7 @@ where lst.Key = @key
 
             AcquireHashLock();
             QueueCommand(x => x.Execute(
-                "delete from Hash where `Key` = @key", new { key }));
+                "delete from "+MySqlStorageOptions.TablePrefix+"Hash where `Key` = @key", new { key }));
         }
 
         public override void Commit()

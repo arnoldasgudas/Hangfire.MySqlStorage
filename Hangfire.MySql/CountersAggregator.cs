@@ -60,18 +60,18 @@ namespace Hangfire.MySql
 SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
 START TRANSACTION;
 
-INSERT INTO AggregatedCounter (`Key`, Value, ExpireAt)
+INSERT INTO "+ MySqlStorageOptions.TablePrefix +@"AggregatedCounter (`Key`, Value, ExpireAt)
     SELECT `Key`, SUM(Value) as Value, MAX(ExpireAt) AS ExpireAt 
     FROM (
             SELECT `Key`, Value, ExpireAt
-            FROM Counter
+            FROM "+ MySqlStorageOptions.TablePrefix + @"Counter
             LIMIT @count) tmp
 	GROUP BY `Key`
         ON DUPLICATE KEY UPDATE 
             Value = Value + VALUES(Value),
             ExpireAt = GREATEST(ExpireAt,VALUES(ExpireAt));
 
-DELETE FROM `Counter`
+DELETE FROM `"+ MySqlStorageOptions.TablePrefix+ @"Counter`
 LIMIT @count;
 
 COMMIT;";

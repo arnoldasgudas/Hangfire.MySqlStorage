@@ -33,7 +33,7 @@ namespace Hangfire.MySql
 
         private static bool TablesExists(MySqlConnection connection)
         {
-            return connection.ExecuteScalar<string>("SHOW TABLES LIKE 'Job';") != null;            
+            return connection.ExecuteScalar<string>("SHOW TABLES LIKE '"+ MySqlStorageOptions.TablePrefix + "Job';") != null;            
         }
 
         private static string GetStringResource(Assembly assembly, string resourceName)
@@ -50,7 +50,9 @@ namespace Hangfire.MySql
 
                 using (var reader = new StreamReader(stream))
                 {
-                    return reader.ReadToEnd();
+                    var sql= reader.ReadToEnd();
+                    sql = sql.Replace("{TablePrefix}", MySqlStorageOptions.TablePrefix);
+                    return sql;
                 }
             }
         }
