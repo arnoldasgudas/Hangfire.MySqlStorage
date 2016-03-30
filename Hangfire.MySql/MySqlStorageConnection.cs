@@ -208,7 +208,7 @@ namespace Hangfire.MySql
             {
                 connection.Execute(
                     "INSERT INTO Server (Id, Data, LastHeartbeat) " +
-                    "VALUE (@Id, @Data, @Heartbeat) " +
+                    "VALUE (@id, @data, @heartbeat) " +
                     "ON DUPLICATE KEY UPDATE Data = @Data, LastHeartbeat = @Heartbeat",
                     new
                     {
