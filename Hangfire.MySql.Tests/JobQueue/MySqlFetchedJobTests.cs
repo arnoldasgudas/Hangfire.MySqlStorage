@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using Dapper;
 using Hangfire.MySql.JobQueue;
 using Moq;
 using Xunit;
@@ -49,18 +50,6 @@ namespace Hangfire.MySql.Tests.JobQueue
 
             Assert.Equal(JobId.ToString(), fetchedJob.JobId);
             Assert.Equal(Queue, fetchedJob.Queue);
-        }
-
-        [Fact, CleanDatabase]
-        public void Dispose_DisposesTheTransactionAndConnection()
-        {
-            var processingJob = CreateFetchedJob(1, "queue");
-
-            // Act
-            processingJob.Dispose();
-
-            // Assert
-            _connection.Verify(x => x.Dispose());
         }
 
         private MySqlFetchedJob CreateFetchedJob(int jobId, string queue)
