@@ -43,27 +43,33 @@ namespace Hangfire.MySql.JobQueue
                 {
                     using (new MySqlDistributedLock(_storage, "JobQueue", TimeSpan.FromSeconds(30)))
                     {
-                        fetchedJob =
-                        connection
-                            .Query<FetchedJob>(
-                                "select Id, JobId, Queue " +
-                                "from JobQueue " +
-                                "where (FetchedAt is null or FetchedAt < DATE_ADD(UTC_TIMESTAMP(), INTERVAL @timeout SECOND)) " +
-                                "   and Queue in @queues " +
-                                "limit 1;",
-                                new
-                                {
-                                    queues = queues,
-                                    timeout = _options.InvisibilityTimeout.Negate().TotalSeconds
-                                })
-                            .SingleOrDefault();
+                        string token = Guid.NewGuid().ToString();
 
-                        if (fetchedJob != null)
+                        int nUpdated = connection.Execute(
+                            "update JobQueue set FetchedAt = UTC_TIMESTAMP(), FetchToken = @fetchToken " +
+                            "where (FetchedAt is null or FetchedAt < DATE_ADD(UTC_TIMESTAMP(), INTERVAL @timeout SECOND)) " +
+                            "   and Queue in @queues " +
+                            "LIMIT 1;",
+                            new
+                            {
+                                queues = queues,
+                                timeout = _options.InvisibilityTimeout.Negate().TotalSeconds,
+                                fetchToken = token
+                            });
+
+                        if(nUpdated != 0)
                         {
-                            connection
-                                .Execute(
-                                    "update JobQueue set FetchedAt = @fetchedAt where Id = @id",
-                                    new {fetchedAt = DateTime.UtcNow, id = fetchedJob.Id});
+                            fetchedJob =
+                                connection
+                                    .Query<FetchedJob>(
+                                        "select Id, JobId, Queue " +
+                                        "from JobQueue " +
+                                        "where FetchToken = @fetchToken;",
+                                        new
+                                        {
+                                            fetchToken = token
+                                        })
+                                    .SingleOrDefault();
                         }
                     }
                 }
