@@ -14,6 +14,9 @@ namespace Hangfire.MySql.JobQueue
         private readonly MySqlStorage _storage;
         private readonly IDbConnection _connection;
         private readonly int _id;
+        private bool _removedFromQueue;
+        private bool _requeued;
+        private bool _disposed;
 
         public MySqlFetchedJob(
             MySqlStorage storage, 
@@ -33,7 +36,17 @@ namespace Hangfire.MySql.JobQueue
 
         public void Dispose()
         {
+
+            if (_disposed) return;
+
+            if (!_removedFromQueue && !_requeued)
+            {
+                Requeue();
+            }
+
             _storage.ReleaseConnection(_connection);
+
+            _disposed = true;
         }
 
         public void RemoveFromQueue()
@@ -48,6 +61,8 @@ namespace Hangfire.MySql.JobQueue
                 {
                     id = _id
                 });
+
+            _removedFromQueue = true;
         }
 
         public void Requeue()
@@ -62,6 +77,7 @@ namespace Hangfire.MySql.JobQueue
                 {
                     id = _id
                 });
+            _requeued = true;
         }
 
         public string JobId { get; private set; }
