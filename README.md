@@ -49,6 +49,18 @@ Description of optional parameters:
 - `DashboardJobListLimit` - dashboard job list limit. Default is 50000.
 - `TransactionTimeout` - transaction timeout. Default is 1 minute.
 
+### How to limit number of open connections
+
+Number of opened connections depends on Hangfire worker count. You can limit worker count by setting `WorkerCount` property value in `BackgroundJobServerOptions`:
+```
+app.UseHangfireServer(
+   new BackgroundJobServerOptions
+   {
+      WorkerCount = 1
+   });
+```
+More info: http://hangfire.io/features.html#concurrency-level-control
+
 ## Dashboard
 Hangfire provides a dashboard
 ![Dashboard](https://camo.githubusercontent.com/f263ab4060a09e4375cc4197fb5bfe2afcacfc20/687474703a2f2f68616e67666972652e696f2f696d672f75692f64617368626f6172642d736d2e706e67)
