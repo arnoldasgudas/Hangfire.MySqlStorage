@@ -1,5 +1,5 @@
 using System;
-using System.Transactions;
+using System.Data;
 
 namespace Hangfire.MySql
 {

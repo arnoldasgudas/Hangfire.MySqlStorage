@@ -9,7 +9,7 @@ namespace Hangfire.MySql.JobQueue
 {
     internal class MySqlFetchedJob : IFetchedJob
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(MySqlFetchedJob));
 
         private readonly MySqlStorage _storage;
         private readonly IDbConnection _connection;

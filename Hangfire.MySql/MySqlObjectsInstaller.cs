@@ -22,9 +22,7 @@ namespace Hangfire.MySql
 
             Log.Info("Start installing Hangfire SQL objects...");
 
-            var script = GetStringResource(
-                typeof(MySqlObjectsInstaller).Assembly,
-                "Hangfire.MySql.Install.sql");
+            var script = GetStringResource("Hangfire.MySql.Install.sql");
 
             connection.Execute(script);
 
@@ -36,8 +34,14 @@ namespace Hangfire.MySql
             return connection.ExecuteScalar<string>("SHOW TABLES LIKE 'Job';") != null;            
         }
 
-        private static string GetStringResource(Assembly assembly, string resourceName)
+        private static string GetStringResource(string resourceName)
         {
+#if NET45
+            var assembly = typeof(MySqlObjectsInstaller).Assembly;
+#else
+            var assembly = typeof(MySqlObjectsInstaller).GetTypeInfo().Assembly;
+#endif
+
             using (var stream = assembly.GetManifestResourceStream(resourceName))
             {
                 if (stream == null)

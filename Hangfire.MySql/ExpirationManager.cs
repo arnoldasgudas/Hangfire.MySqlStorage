@@ -9,7 +9,7 @@ namespace Hangfire.MySql
 {
     internal class ExpirationManager : IServerComponent
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(ExpirationManager));
 
         private static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromSeconds(30);
         private const string DistributedLockKey = "expirationmanager";

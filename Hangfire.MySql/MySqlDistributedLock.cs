@@ -8,7 +8,7 @@ namespace Hangfire.MySql
 {
     public class MySqlDistributedLock : IDisposable, IComparable
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(MySqlDistributedLock));
 
         private readonly string _resource;
         private readonly TimeSpan _timeout;
@@ -127,7 +127,7 @@ namespace Hangfire.MySql
 
             var mySqlDistributedLock = obj as MySqlDistributedLock;
             if (mySqlDistributedLock != null)
-                return string.Compare(this.Resource, mySqlDistributedLock.Resource, StringComparison.InvariantCultureIgnoreCase);
+                return string.Compare(this.Resource, mySqlDistributedLock.Resource, StringComparison.OrdinalIgnoreCase);
             
             throw new ArgumentException("Object is not a mySqlDistributedLock");
         }

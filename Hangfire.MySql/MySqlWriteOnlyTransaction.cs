@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Transactions;
 using Dapper;
 using Hangfire.Common;
 using Hangfire.Logging;
@@ -13,7 +12,7 @@ namespace Hangfire.MySql
 {
     internal class MySqlWriteOnlyTransaction : JobStorageTransaction
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(MySqlWriteOnlyTransaction));
 
         private readonly MySqlStorage _storage;
 
@@ -344,9 +343,7 @@ where lst.Key = @key
         {
             _storage.UseTransaction(connection =>
             {
-                connection.EnlistTransaction(Transaction.Current);
-
-                foreach (var command in _commandQueue)
+                foreach (Action<MySqlConnection> command in _commandQueue)
                 {
                     command(connection);
                 }

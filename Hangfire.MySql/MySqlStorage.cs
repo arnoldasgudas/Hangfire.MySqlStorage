@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
-using System.Transactions;
 using Hangfire.Annotations;
 using Hangfire.Logging;
 using Hangfire.MySql.JobQueue;
@@ -11,7 +10,6 @@ using Hangfire.MySql.Monitoring;
 using Hangfire.Server;
 using Hangfire.Storage;
 using MySql.Data.MySqlClient;
-using IsolationLevel = System.Transactions.IsolationLevel;
 
 namespace Hangfire.MySql
 {
@@ -146,7 +144,7 @@ namespace Hangfire.MySql
         {
             return nameOrConnectionString.Contains(";");
         }
-        
+
         internal void UseTransaction([InstantHandle] Action<MySqlConnection> action)
         {
             UseTransaction(connection =>
@@ -157,24 +155,20 @@ namespace Hangfire.MySql
         }
 
         internal T UseTransaction<T>(
-            [InstantHandle] Func<MySqlConnection, T> func, IsolationLevel? isolationLevel)
+           [InstantHandle] Func<MySqlConnection, T> func, IsolationLevel? isolationLevel)
         {
-            using (var transaction = CreateTransaction(isolationLevel ?? _options.TransactionIsolationLevel))
+            return UseConnection(connection =>
             {
-                var result = UseConnection(func);
-                transaction.Complete();
+                using (MySqlTransaction transaction = connection.BeginTransaction(isolationLevel ?? _options.TransactionIsolationLevel ?? IsolationLevel.ReadUncommitted))
+                {
+                    T result = func(connection);
+                    transaction.Commit();
 
-                return result;
-            }
+                    return result;
+                }
+            });
         }
-        private TransactionScope CreateTransaction(IsolationLevel? isolationLevel)
-        {
-            return isolationLevel != null
-                ? new TransactionScope(TransactionScopeOption.Required,
-                    new TransactionOptions { IsolationLevel = isolationLevel.Value, Timeout = _options.TransactionTimeout })
-                : new TransactionScope();
-        }
-
+        
         internal void UseConnection([InstantHandle] Action<MySqlConnection> action)
         {
             UseConnection(connection =>
