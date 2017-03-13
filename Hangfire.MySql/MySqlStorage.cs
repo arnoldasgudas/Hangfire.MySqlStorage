@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -26,30 +25,26 @@ namespace Hangfire.MySql
 
         public virtual PersistentJobQueueProviderCollection QueueProviders { get; private set; }
 
-        public MySqlStorage(string nameOrConnectionString)
-            : this(nameOrConnectionString, new MySqlStorageOptions())
+        public MySqlStorage(string connectionString)
+            : this(connectionString, new MySqlStorageOptions())
         {
         }
 
-        public MySqlStorage(string nameOrConnectionString, MySqlStorageOptions options)
+        public MySqlStorage(string connectionString, MySqlStorageOptions options)
         {
-            if (nameOrConnectionString == null) throw new ArgumentNullException("nameOrConnectionString");
+            if (connectionString == null) throw new ArgumentNullException("connectionString");
             if (options == null) throw new ArgumentNullException("options");
 
-            if (IsConnectionString(nameOrConnectionString))
+            if (IsConnectionString(connectionString))
             {
-                _connectionString = nameOrConnectionString;
-            }
-            else if (IsConnectionStringInConfiguration(nameOrConnectionString))
-            {
-                _connectionString = ConfigurationManager.ConnectionStrings[nameOrConnectionString].ConnectionString;
+                _connectionString = connectionString;
             }
             else
             {
                 throw new ArgumentException(
                     string.Format(
                         "Could not find connection string with name '{0}' in application config file",
-                        nameOrConnectionString));
+                        connectionString));
             }
             _options = options;
 
@@ -151,14 +146,7 @@ namespace Hangfire.MySql
         {
             return nameOrConnectionString.Contains(";");
         }
-
-        private bool IsConnectionStringInConfiguration(string connectionStringName)
-        {
-            var connectionStringSetting = ConfigurationManager.ConnectionStrings[connectionStringName];
-
-            return connectionStringSetting != null;
-        }
-
+        
         internal void UseTransaction([InstantHandle] Action<MySqlConnection> action)
         {
             UseTransaction(connection =>

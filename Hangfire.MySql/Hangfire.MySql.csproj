@@ -24,7 +24,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Transactions" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
