@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Text;
-using System.Transactions;
 using Hangfire.Annotations;
 using Hangfire.Logging;
 using Hangfire.MySql.JobQueue;
@@ -12,7 +10,6 @@ using Hangfire.MySql.Monitoring;
 using Hangfire.Server;
 using Hangfire.Storage;
 using MySql.Data.MySqlClient;
-using IsolationLevel = System.Transactions.IsolationLevel;
 
 namespace Hangfire.MySql
 {
@@ -26,30 +23,26 @@ namespace Hangfire.MySql
 
         public virtual PersistentJobQueueProviderCollection QueueProviders { get; private set; }
 
-        public MySqlStorage(string nameOrConnectionString)
-            : this(nameOrConnectionString, new MySqlStorageOptions())
+        public MySqlStorage(string connectionString)
+            : this(connectionString, new MySqlStorageOptions())
         {
         }
 
-        public MySqlStorage(string nameOrConnectionString, MySqlStorageOptions options)
+        public MySqlStorage(string connectionString, MySqlStorageOptions options)
         {
-            if (nameOrConnectionString == null) throw new ArgumentNullException("nameOrConnectionString");
+            if (connectionString == null) throw new ArgumentNullException("connectionString");
             if (options == null) throw new ArgumentNullException("options");
 
-            if (IsConnectionString(nameOrConnectionString))
+            if (IsConnectionString(connectionString))
             {
-                _connectionString = nameOrConnectionString;
-            }
-            else if (IsConnectionStringInConfiguration(nameOrConnectionString))
-            {
-                _connectionString = ConfigurationManager.ConnectionStrings[nameOrConnectionString].ConnectionString;
+                _connectionString = connectionString;
             }
             else
             {
                 throw new ArgumentException(
                     string.Format(
                         "Could not find connection string with name '{0}' in application config file",
-                        nameOrConnectionString));
+                        connectionString));
             }
             _options = options;
 
@@ -152,13 +145,6 @@ namespace Hangfire.MySql
             return nameOrConnectionString.Contains(";");
         }
 
-        private bool IsConnectionStringInConfiguration(string connectionStringName)
-        {
-            var connectionStringSetting = ConfigurationManager.ConnectionStrings[connectionStringName];
-
-            return connectionStringSetting != null;
-        }
-
         internal void UseTransaction([InstantHandle] Action<MySqlConnection> action)
         {
             UseTransaction(connection =>
@@ -169,24 +155,20 @@ namespace Hangfire.MySql
         }
 
         internal T UseTransaction<T>(
-            [InstantHandle] Func<MySqlConnection, T> func, IsolationLevel? isolationLevel)
+           [InstantHandle] Func<MySqlConnection, T> func, IsolationLevel? isolationLevel)
         {
-            using (var transaction = CreateTransaction(isolationLevel ?? _options.TransactionIsolationLevel))
+            return UseConnection(connection =>
             {
-                var result = UseConnection(func);
-                transaction.Complete();
+                using (MySqlTransaction transaction = connection.BeginTransaction(isolationLevel ?? _options.TransactionIsolationLevel ?? IsolationLevel.ReadUncommitted))
+                {
+                    T result = func(connection);
+                    transaction.Commit();
 
-                return result;
-            }
+                    return result;
+                }
+            });
         }
-        private TransactionScope CreateTransaction(IsolationLevel? isolationLevel)
-        {
-            return isolationLevel != null
-                ? new TransactionScope(TransactionScopeOption.Required,
-                    new TransactionOptions { IsolationLevel = isolationLevel.Value, Timeout = _options.TransactionTimeout })
-                : new TransactionScope();
-        }
-
+        
         internal void UseConnection([InstantHandle] Action<MySqlConnection> action)
         {
             UseConnection(connection =>

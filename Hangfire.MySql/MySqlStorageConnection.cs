@@ -14,7 +14,7 @@ namespace Hangfire.MySql
 {
     public class MySqlStorageConnection : JobStorageConnection
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(MySqlStorageConnection));
 
         private readonly MySqlStorage _storage;
         public MySqlStorageConnection(MySqlStorage storage)

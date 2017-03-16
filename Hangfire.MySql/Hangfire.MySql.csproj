@@ -1,103 +1,35 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{A4D8007C-A2E5-4BD9-A707-87BA00EB6B7A}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Hangfire.MySql</RootNamespace>
-    <AssemblyName>Hangfire.MySql</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
+    <Description>Hangfire MySql Storage</Description>
+    <PackageId>Hangfire.MySqlStorage</PackageId>
+    <Product>Hangfire MySql Storage</Product>
+    <Company />
+    <Authors>Arnoldas Gudas</Authors>
+    <PackageLicenseUrl>https://github.com/arnoldasgudas/Hangfire.MySqlStorage/blob/master/License.md</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/arnoldasgudas/Hangfire.MySqlStorage</PackageProjectUrl>
+    <Copyright>Copyright 2015</Copyright>
+    <PackageTags>Hangfire MySql Hangfire.MySql</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dapper">
-      <HintPath>..\packages\Dapper.1.42\lib\net45\Dapper.dll</HintPath>
-    </Reference>
-    <Reference Include="Hangfire.Core">
-      <HintPath>..\packages\Hangfire.Core.1.5.3\lib\net45\Hangfire.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="MySql.Data">
-      <HintPath>..\packages\MySql.Data.6.9.8\lib\net45\MySql.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="Owin">
-      <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Transactions" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="CountersAggregator.cs" />
-    <Compile Include="Entities\JobParameter.cs" />
-    <Compile Include="Entities\SqlHash.cs" />
-    <Compile Include="Entities\SqlState.cs" />
-    <Compile Include="ExpirationManager.cs" />
-    <Compile Include="JobQueue\FetchedJob.cs" />
-    <Compile Include="JobQueue\IPersistentJobQueueProvider.cs" />
-    <Compile Include="JobQueue\IPersistentJobQueueMonitoringApi.cs" />
-    <Compile Include="JobQueue\EnqueuedAndFetchedCountDto.cs" />
-    <Compile Include="JobQueue\IPersistentJobQueue.cs" />
-    <Compile Include="JobQueue\MySqlFetchedJob.cs" />
-    <Compile Include="JobQueue\MySqlJobQueue.cs" />
-    <Compile Include="JobQueue\MySqlJobQueueMonitoringApi.cs" />
-    <Compile Include="JobQueue\MySqlJobQueueProvider.cs" />
-    <Compile Include="Monitoring\MySqlMonitoringApi.cs" />
-    <Compile Include="Entities\SqlJob.cs" />
-    <Compile Include="Entities\Server.cs" />
-    <Compile Include="MySqlDistributedLock.cs" />
-    <Compile Include="MySqlDistributedLockException.cs" />
-    <Compile Include="MySqlObjectsInstaller.cs" />
-    <Compile Include="MySqlStorage.cs" />
-    <Compile Include="MySqlStorageConnection.cs" />
-    <Compile Include="MySqlStorageOptions.cs" />
-    <Compile Include="MySqlWriteOnlyTransaction.cs" />
-    <Compile Include="JobQueue\PersistentJobQueueProviderCollection.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Entities\ServerData.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="packages.config" />
+    <None Remove="Install.sql" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Install.sql" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="Dapper" Version="1.50.2" />
+    <PackageReference Include="Hangfire.Core" Version="1.6.10" />
+    <PackageReference Include="MySql.Data" Version="6.9.9" />
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+    <PackageReference Include="Dapper" Version="1.50.2" />
+    <PackageReference Include="Hangfire.Core" Version="1.6.10" />
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="SapientGuardian.MySql.Data" Version="6.9.814" />
+  </ItemGroup>
 </Project>
