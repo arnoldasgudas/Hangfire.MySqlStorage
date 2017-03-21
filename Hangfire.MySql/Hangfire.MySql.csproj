@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
     <Description>Hangfire MySql Storage</Description>
     <PackageId>Hangfire.MySqlStorage</PackageId>
     <Product>Hangfire MySql Storage</Product>
@@ -10,6 +11,7 @@
     <PackageProjectUrl>https://github.com/arnoldasgudas/Hangfire.MySqlStorage</PackageProjectUrl>
     <Copyright>Copyright 2015</Copyright>
     <PackageTags>Hangfire MySql Hangfire.MySql</PackageTags>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Install.sql" />
@@ -17,19 +19,11 @@
   <ItemGroup>
     <EmbeddedResource Include="Install.sql" />
   </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <Reference Include="Microsoft.CSharp" />
+  <ItemGroup>
     <PackageReference Include="Dapper" Version="1.50.2" />
-    <PackageReference Include="Hangfire.Core" Version="1.6.10" />
-    <PackageReference Include="MySql.Data" Version="6.9.9" />
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="Hangfire.Core" Version="1.6.11" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
+    <PackageReference Include="SapientGuardian.EntityFrameworkCore.MySql" Version="7.1.21" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-    <PackageReference Include="Dapper" Version="1.50.2" />
-    <PackageReference Include="Hangfire.Core" Version="1.6.10" />
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-    <PackageReference Include="SapientGuardian.MySql.Data" Version="6.9.814" />
-  </ItemGroup>
 </Project>
