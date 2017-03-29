@@ -43,9 +43,10 @@ namespace Hangfire.MySql
 
         public void Execute(CancellationToken cancellationToken)
         {
-            foreach (var table in ProcessedTables)
+            foreach (var tableTemp in ProcessedTables)
             {
-                Logger.DebugFormat("Removing outdated records from table '{0}'...", table);
+                var table = _storage.TablePrefix + tableTemp;
+                Logger.DebugFormat("Removing outdated records from table `{0}`...", table);
 
                 int removedCount = 0;
 
@@ -59,8 +60,8 @@ namespace Hangfire.MySql
 
                             using (
                                 new MySqlDistributedLock(
-                                    connection, 
-                                    DistributedLockKey, 
+                                    connection,
+                                    DistributedLockKey,
                                     DefaultLockTimeout,
                                     cancellationToken).Acquire())
                             {
@@ -68,10 +69,10 @@ namespace Hangfire.MySql
                                     String.Format(
                                         "select null from `{0}` where ExpireAt < @now; " +
                                         "delete from `{0}` where ExpireAt < @now limit @count;", table),
-                                    new {now = DateTime.UtcNow, count = NumberOfRecordsInSinglePass});
+                                    new { now = DateTime.UtcNow, count = NumberOfRecordsInSinglePass });
                             }
 
-                            Logger.DebugFormat("removed records count={0}",removedCount);
+                            Logger.DebugFormat("removed records count={0}", removedCount);
                         }
                         catch (MySqlException ex)
                         {
@@ -81,7 +82,7 @@ namespace Hangfire.MySql
 
                     if (removedCount > 0)
                     {
-                        Logger.Trace(String.Format("Removed {0} outdated record(s) from '{1}' table.", removedCount,
+                        Logger.Trace(String.Format("Removed {0} outdated record(s) from `{1}` table.", removedCount,
                             table));
 
                         cancellationToken.WaitHandle.WaitOne(DelayBetweenPasses);

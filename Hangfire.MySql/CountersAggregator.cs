@@ -26,7 +26,7 @@ namespace Hangfire.MySql
 
         public void Execute(CancellationToken cancellationToken)
         {
-            Logger.DebugFormat("Aggregating records in 'Counter' table...");
+            Logger.DebugFormat("Aggregating records in `Counter` table...");
 
             int removedCount = 0;
 
@@ -35,7 +35,7 @@ namespace Hangfire.MySql
                 _storage.UseConnection(connection =>
                 {
                     removedCount = connection.Execute(
-                        GetAggregationQuery(),
+                        GetAggregationQuery(_storage.TablePrefix),
                         new { now = DateTime.UtcNow, count = NumberOfRecordsInSinglePass });
                 });
 
@@ -54,24 +54,24 @@ namespace Hangfire.MySql
             return GetType().ToString();
         }
 
-        private static string GetAggregationQuery()
+        private static string GetAggregationQuery(string tablePrefix)
         {
-            return @"
+            return $@"
 SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
 START TRANSACTION;
 
-INSERT INTO AggregatedCounter (`Key`, Value, ExpireAt)
+INSERT INTO `{tablePrefix}AggregatedCounter` (`Key`, Value, ExpireAt)
     SELECT `Key`, SUM(Value) as Value, MAX(ExpireAt) AS ExpireAt 
     FROM (
             SELECT `Key`, Value, ExpireAt
-            FROM Counter
+            FROM `{tablePrefix}Counter`
             LIMIT @count) tmp
 	GROUP BY `Key`
         ON DUPLICATE KEY UPDATE 
             Value = Value + VALUES(Value),
             ExpireAt = GREATEST(ExpireAt,VALUES(ExpireAt));
 
-DELETE FROM `Counter`
+DELETE FROM `{tablePrefix}Counter`
 LIMIT @count;
 
 COMMIT;";

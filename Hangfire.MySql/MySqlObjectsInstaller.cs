@@ -10,11 +10,11 @@ namespace Hangfire.MySql
     public static class MySqlObjectsInstaller
     {
         private static readonly ILog Log = LogProvider.GetLogger(typeof(MySqlStorage));
-        public static void Install(MySqlConnection connection)
+        public static void Install(MySqlConnection connection, string tablesPrefix)
         {
             if (connection == null) throw new ArgumentNullException("connection");
 
-            if (TablesExists(connection))
+            if (TablesExists(connection, tablesPrefix))
             {
                 Log.Info("DB tables already exist. Exit install");
                 return;
@@ -25,15 +25,15 @@ namespace Hangfire.MySql
             var script = GetStringResource(
                 typeof(MySqlObjectsInstaller).Assembly,
                 "Hangfire.MySql.Install.sql");
-
+            script = script.Replace("CREATE TABLE `", "CREATE TABLE `" + tablesPrefix);
             connection.Execute(script);
 
             Log.Info("Hangfire SQL objects installed.");
         }
 
-        private static bool TablesExists(MySqlConnection connection)
+        private static bool TablesExists(MySqlConnection connection, string tablesPrefix)
         {
-            return connection.ExecuteScalar<string>("SHOW TABLES LIKE 'Job';") != null;            
+            return connection.ExecuteScalar<string>($"SHOW TABLES LIKE `{tablesPrefix}Job`;") != null;
         }
 
         private static string GetStringResource(Assembly assembly, string resourceName)
