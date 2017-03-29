@@ -33,8 +33,8 @@ namespace Hangfire.MySql.Tests
 
             using (var connection = new MySqlConnection(
                 ConnectionUtils.GetConnectionString()))
-            {
-                MySqlObjectsInstaller.Install(connection);
+            {//TODO:TablesPrefix
+                MySqlObjectsInstaller.Install(connection, "Hangfire_");
             }
         }
 

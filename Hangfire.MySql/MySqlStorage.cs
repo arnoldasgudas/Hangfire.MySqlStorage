@@ -18,7 +18,7 @@ namespace Hangfire.MySql
 {
     public class MySqlStorage : JobStorage, IDisposable
     {
-        private static readonly ILog Logger = LogProvider.GetLogger(typeof (MySqlStorage));
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(MySqlStorage));
 
         private readonly string _connectionString;
         private readonly MySqlConnection _existingConnection;
@@ -48,7 +48,7 @@ namespace Hangfire.MySql
             {
                 throw new ArgumentException(
                     string.Format(
-                        "Could not find connection string with name '{0}' in application config file",
+                        "Could not find connection string with name `{0}` in application config file",
                         nameOrConnectionString));
             }
             _options = options;
@@ -57,7 +57,7 @@ namespace Hangfire.MySql
             {
                 using (var connection = CreateAndOpenConnection())
                 {
-                    MySqlObjectsInstaller.Install(connection);
+                    MySqlObjectsInstaller.Install(connection, options.TablePrefix);
                 }
             }
 
@@ -76,11 +76,12 @@ namespace Hangfire.MySql
 
         private void InitializeQueueProviders()
         {
-            QueueProviders = 
+            QueueProviders =
                 new PersistentJobQueueProviderCollection(
                     new MySqlJobQueueProvider(this, _options));
         }
 
+        public string TablePrefix { get { return _options.TablePrefix; } }
         public override IEnumerable<IServerComponent> GetComponents()
         {
             yield return new ExpirationManager(this, _options.JobExpirationCheckInterval);
@@ -220,7 +221,7 @@ namespace Hangfire.MySql
 
             var connection = new MySqlConnection(_connectionString);
             connection.Open();
-            
+
             return connection;
         }
 

@@ -52,11 +52,11 @@ namespace Hangfire.MySql
             return
                 _connection
                     .Execute(
-                        "INSERT INTO DistributedLock (Resource, CreatedAt) " +
+                        $"INSERT INTO `{_storage.TablePrefix}DistributedLock` (Resource, CreatedAt) " +
                         "  SELECT @resource, @now " +
-                        "  FROM dual " +
+                        $"  FROM `{_storage.TablePrefix}dual` " +
                         "  WHERE NOT EXISTS ( " +
-                        "  		SELECT * FROM DistributedLock " +
+                        $"  		SELECT * FROM `{_storage.TablePrefix}DistributedLock` " +
                         "     	WHERE Resource = @resource " +
                         "       AND CreatedAt > @expired)", 
                         new
@@ -113,7 +113,7 @@ namespace Hangfire.MySql
 
             _connection
                 .Execute(
-                    "DELETE FROM DistributedLock  " +
+                    $"DELETE FROM `{_storage.TablePrefix}DistributedLock`  " +
                     "WHERE Resource = @resource",
                     new
                     {

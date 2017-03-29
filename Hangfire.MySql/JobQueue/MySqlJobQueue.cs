@@ -46,7 +46,7 @@ namespace Hangfire.MySql.JobQueue
                         string token = Guid.NewGuid().ToString();
 
                         int nUpdated = connection.Execute(
-                            "update JobQueue set FetchedAt = UTC_TIMESTAMP(), FetchToken = @fetchToken " +
+                            $"update `{_storage.TablePrefix}JobQueue` set FetchedAt = UTC_TIMESTAMP(), FetchToken = @fetchToken " +
                             "where (FetchedAt is null or FetchedAt < DATE_ADD(UTC_TIMESTAMP(), INTERVAL @timeout SECOND)) " +
                             "   and Queue in @queues " +
                             "LIMIT 1;",
@@ -63,7 +63,7 @@ namespace Hangfire.MySql.JobQueue
                                 connection
                                     .Query<FetchedJob>(
                                         "select Id, JobId, Queue " +
-                                        "from JobQueue " +
+                                        $"from `{_storage.TablePrefix}JobQueue` " +
                                         "where FetchToken = @fetchToken;",
                                         new
                                         {
@@ -95,7 +95,7 @@ namespace Hangfire.MySql.JobQueue
         public void Enqueue(IDbConnection connection, string queue, string jobId)
         {
             Logger.TraceFormat("Enqueue JobId={0} Queue={1}", jobId, queue);
-            connection.Execute("insert into JobQueue (JobId, Queue) values (@jobId, @queue)", new {jobId, queue});
+            connection.Execute($"insert into `{_storage.TablePrefix}JobQueue` (JobId, Queue) values (@jobId, @queue)", new {jobId, queue});
         }
     }
 }

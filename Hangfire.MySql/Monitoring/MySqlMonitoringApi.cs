@@ -60,7 +60,7 @@ namespace Hangfire.MySql.Monitoring
             return UseConnection<IList<ServerDto>>(connection =>
             {
                 var servers = 
-                    connection.Query<Entities.Server>("select * from Server").ToList();
+                    connection.Query<Entities.Server>($"select * from `{_storage.TablePrefix}Server`").ToList();
 
                 var result = new List<ServerDto>();
 
@@ -86,10 +86,10 @@ namespace Hangfire.MySql.Monitoring
             return UseConnection(connection =>
             {
 
-                string sql = @"
-select * from Job where Id = @id;
-select * from JobParameter where JobId = @id;
-select * from State where JobId = @id order by Id desc;";
+                string sql = $@"
+select * from `{_storage.TablePrefix}Job` where Id = @id;
+select * from `{_storage.TablePrefix}JobParameter` where JobId = @id;
+select * from `{_storage.TablePrefix}State` where JobId = @id order by Id desc;";
 
                 using (var multi = connection.QueryMultiple(sql, new { id = jobId }))
                 {
@@ -125,12 +125,12 @@ select * from State where JobId = @id order by Id desc;";
 
         public StatisticsDto GetStatistics()
         {
-            const string jobQuery = "select count(Id) from Job where StateName = @stateName";
-            const string succeededQuery = @"
+            string jobQuery = $"select count(Id) from `{_storage.TablePrefix}Job` where StateName = @stateName";
+            string succeededQuery = $@"
 select sum(s.`Value`) from (
-    select sum(`Value`) as `Value` from Counter where `Key` = @key
+    select sum(`Value`) as `Value` from `{_storage.TablePrefix}Counter` where `Key` = @key
     union all
-    select `Value` from AggregatedCounter where `Key` = @key
+    select `Value` from `{_storage.TablePrefix}AggregatedCounter` where `Key` = @key
 ) as s;";
 
             var statistics = 
@@ -141,11 +141,11 @@ select sum(s.`Value`) from (
                         Failed = connection.ExecuteScalar<int>(jobQuery, new {stateName = "Failed"}),
                         Processing = connection.ExecuteScalar<int>(jobQuery, new {stateName = "Processing"}),
                         Scheduled = connection.ExecuteScalar<int>(jobQuery, new {stateName = "Scheduled"}),
-                        Servers = connection.ExecuteScalar<int>("select count(Id) from Server"),
+                        Servers = connection.ExecuteScalar<int>($"select count(Id) from `{_storage.TablePrefix}Server`"),
                         Succeeded = connection.ExecuteScalar<int>(succeededQuery, new {key = "stats:succeeded"}),
                         Deleted = connection.ExecuteScalar<int>(succeededQuery, new {key = "stats:deleted"}),
                         Recurring =
-                            connection.ExecuteScalar<int>("select count(*) from `Set` where `Key` = 'recurring-jobs'")
+                            connection.ExecuteScalar<int>($"select count(*) from `{_storage.TablePrefix}Set` where `Key` = `recurring-jobs`")
                     });
 
             statistics.Queues = _storage.QueueProviders
@@ -327,8 +327,8 @@ select sum(s.`Value`) from (
         private long GetNumberOfJobsByStateName(MySqlConnection connection, string stateName)
         {
             var sqlQuery = _jobListLimit.HasValue
-                ? "select count(j.Id) from (select Id from Job where StateName = @state limit @limit) as j"
-                : "select count(Id) from Job where StateName = @state";
+                ? $"select count(j.Id) from (select Id from `{_storage.TablePrefix}Job` where StateName = @state limit @limit) as j"
+                : $"select count(Id) from `{_storage.TablePrefix}Job` where StateName = @state";
 
             var count = connection.Query<int>(
                  sqlQuery,
@@ -353,11 +353,11 @@ select sum(s.`Value`) from (
             Func<SqlJob, Job, Dictionary<string, string>, TDto> selector)
         {
             string jobsSql =
-@"select * from (
+$@"select * from (
   select j.*, s.Reason as StateReason, s.Data as StateData, @rownum := @rownum + 1 AS rank
-  from Job j
+  from `{_storage.TablePrefix}Job` j
     cross join (SELECT @rownum := 0) r
-  left join State s on j.StateId = s.Id
+  left join `{_storage.TablePrefix}State` s on j.StateId = s.Id
   where j.StateName = @stateName
   order by j.Id desc
 ) as j where j.rank between @start and @end ";
@@ -429,7 +429,7 @@ select sum(s.`Value`) from (
             IDictionary<string, DateTime> keyMaps)
         {
             var valuesMap = connection.Query(
-                "select `Key`, `Value` as `Count` from AggregatedCounter where `Key` in @keys",
+                $"select `Key`, `Value` as `Count` from `{_storage.TablePrefix}AggregatedCounter` where `Key` in @keys",
                 new { keys = keyMaps.Keys })
                 .ToDictionary(x => (string)x.Key, x => (long)x.Count);
 
@@ -452,10 +452,10 @@ select sum(s.`Value`) from (
             MySqlConnection connection,
             IEnumerable<int> jobIds)
         {
-            string enqueuedJobsSql = 
-@"select j.*, s.Reason as StateReason, s.Data as StateData 
-from Job j
-left join State s on s.Id = j.StateId
+            string enqueuedJobsSql =
+$@"select j.*, s.Reason as StateReason, s.Data as StateData 
+from `{_storage.TablePrefix}Job` j
+left join `{_storage.TablePrefix}State` s on s.Id = j.StateId
 where j.Id in @jobIds";
 
             var jobs = connection.Query<SqlJob>(
@@ -479,10 +479,10 @@ where j.Id in @jobIds";
             MySqlConnection connection,
             IEnumerable<int> jobIds)
         {
-            string fetchedJobsSql = @"
+            string fetchedJobsSql = $@"
 select j.*, s.Reason as StateReason, s.Data as StateData 
-from Job j
-left join State s on s.Id = j.StateId
+from `{_storage.TablePrefix}Job` j
+left join `{_storage.TablePrefix}State` s on s.Id = j.StateId
 where j.Id in @jobIds";
 
             var jobs = connection.Query<SqlJob>(
