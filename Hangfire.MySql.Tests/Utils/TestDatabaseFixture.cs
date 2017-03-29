@@ -34,7 +34,7 @@ namespace Hangfire.MySql.Tests
             using (var connection = new MySqlConnection(
                 ConnectionUtils.GetConnectionString()))
             {//TODO:TablesPrefix
-                MySqlObjectsInstaller.Install(connection, "Hangfire_");
+                MySqlObjectsInstaller.Install(connection, "");
             }
         }
 
