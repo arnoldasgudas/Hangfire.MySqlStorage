@@ -38,11 +38,13 @@ namespace Hangfire.MySql
 
             if (IsConnectionString(nameOrConnectionString))
             {
-                _connectionString = nameOrConnectionString;
+                _connectionString = ApplyAllowUserVariablesProperty(nameOrConnectionString);
             }
             else if (IsConnectionStringInConfiguration(nameOrConnectionString))
             {
-                _connectionString = ConfigurationManager.ConnectionStrings[nameOrConnectionString].ConnectionString;
+                _connectionString = 
+                    ApplyAllowUserVariablesProperty(
+                        ConfigurationManager.ConnectionStrings[nameOrConnectionString].ConnectionString);
             }
             else
             {
@@ -62,6 +64,16 @@ namespace Hangfire.MySql
             }
 
             InitializeQueueProviders();
+        }
+
+        private string ApplyAllowUserVariablesProperty(string connectionString)
+        {
+            if (connectionString.ToLower().Contains("allow user variables"))
+            {
+                return connectionString;
+            }
+
+            return connectionString + ";Allow User Variables=True;";
         }
 
         internal MySqlStorage(MySqlConnection existingConnection)
