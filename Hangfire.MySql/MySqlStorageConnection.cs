@@ -276,18 +276,19 @@ namespace Hangfire.MySql
         public override List<string> GetRangeFromSet(string key, int startingFrom, int endingAt)
         {
             if (key == null) throw new ArgumentNullException("key");
-
+            
             return _storage.UseConnection(connection =>
                 connection
                     .Query<string>(@"
 select `Value` 
-from `Set` s 
-    inner join (
-	    select tmp.Id, @rownum := @rownum + 1 AS rank
-	    from `Set` tmp,
-            (select @rownum := 0) r ) ranked on ranked.Id = s.Id
-where s.`Key` = @key 
-    and  ranked.rank between @startingFrom and @endingAt",
+from (
+	    select `Value`, @rownum := @rownum + 1 AS rank
+	    from `Set`,
+            (select @rownum := 0) r 
+        where `Key` = @key
+        order by Id
+     ) ranked
+where ranked.rank between @startingFrom and @endingAt",
                         new {key = key, startingFrom = startingFrom + 1, endingAt = endingAt + 1})
                     .ToList());
         }
@@ -417,16 +418,14 @@ where `Key` = @key) as s";
 
             string query = @"
 select `Value` 
-from List lst
-    inner join (
-        select tmp.Id, @rownum := @rownum + 1 AS rank
-	    from `List` tmp,
-            (select @rownum := -1) r 
-        ) ranked on ranked.Id = lst.Id
-where lst.`Key` = @key 
-    and  ranked.rank between @startingFrom and @endingAt
-order by lst.Id desc";
-
+from (
+        select `Value`, @rownum := @rownum + 1 AS rank
+	    from `List`,
+            (select @rownum := 0) r
+        where `Key` = @key
+        order by Id desc
+     ) ranked
+where ranked.rank between @startingFrom and @endingAt";
             return
                 _storage
                     .UseConnection(connection =>
