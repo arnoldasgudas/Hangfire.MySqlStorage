@@ -880,6 +880,34 @@ values (@Key, @Value, 0.0)";
         }
 
         [Fact, CleanDatabase]
+        public void GetRangeFromSet_ReturnsPagedElements2()
+        {
+            const string arrangeSql = @"
+insert into `Set` (`Key`, `Value`, `Score`)
+values (@Key, @Value, 0.0)";
+
+            UseConnections((sql, connection) =>
+            {
+                sql.Execute(arrangeSql, new List<dynamic>
+                {
+                    new { Key = "set-1", Value = "1" },
+                    new { Key = "set-1", Value = "2" },
+                    new { Key = "set-0", Value = "3" },
+                    new { Key = "set-1", Value = "4" },
+                    new { Key = "set-2", Value = "1" },
+                    new { Key = "set-1", Value = "5" },
+                    new { Key = "set-2", Value = "2" },
+                    new { Key = "set-1", Value = "3" },
+                });
+
+                var result = connection.GetRangeFromSet("set-1", 0, 4);
+
+                Assert.Equal(new[] { "1", "2", "4", "5", "3" }, result);
+            });
+        }
+
+
+        [Fact, CleanDatabase]
         public void GetCounter_ThrowsAnException_WhenKeyIsNull()
         {
             UseConnection(connection =>

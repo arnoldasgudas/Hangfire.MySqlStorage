@@ -25,5 +25,4 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
     <PackageReference Include="SapientGuardian.EntityFrameworkCore.MySql" Version="7.1.21" />
   </ItemGroup>
-
 </Project>

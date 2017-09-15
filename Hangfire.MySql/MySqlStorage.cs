@@ -57,6 +57,16 @@ namespace Hangfire.MySql
             InitializeQueueProviders();
         }
 
+        private string ApplyAllowUserVariablesProperty(string connectionString)
+        {
+            if (connectionString.ToLower().Contains("allow user variables"))
+            {
+                return connectionString;
+            }
+
+            return connectionString + ";Allow User Variables=True;";
+        }
+
         internal MySqlStorage(MySqlConnection existingConnection)
         {
             if (existingConnection == null) throw new ArgumentNullException("existingConnection");
