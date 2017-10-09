@@ -22,7 +22,7 @@ namespace Hangfire.MySql.Tests.Monitoring
             "\"Method\":\"WriteLine\"," +
             "\"ParameterTypes\":\"[\\\"System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089\\\"]\"," +
             "\"Arguments\":\"[\\\"\\\"test\\\"\\\"]\"}";
-        private readonly string _arguments = "[\"test\"]";
+        private readonly string _arguments = "[\"\\\"test\\\"\"]";
         private readonly DateTime _createdAt = DateTime.UtcNow;
         private readonly DateTime _expireAt = DateTime.UtcNow.AddMinutes(1);
 
@@ -32,19 +32,23 @@ namespace Hangfire.MySql.Tests.Monitoring
             _connection.Open();
 
             var persistentJobQueueMonitoringApiMock = new Mock<IPersistentJobQueueMonitoringApi>();
-            persistentJobQueueMonitoringApiMock.Setup(m => m.GetQueues()).Returns(new[] {"default"});
+            persistentJobQueueMonitoringApiMock.Setup(m => m.GetQueues()).Returns(new[] { "default" });
 
             var defaultProviderMock = new Mock<IPersistentJobQueueProvider>();
             defaultProviderMock.Setup(m => m.GetJobQueueMonitoringApi())
                 .Returns(persistentJobQueueMonitoringApiMock.Object);
 
-            var mySqlStorageMock = new Mock<MySqlStorage>(_connection);
+            var storageOptions = new MySqlStorageOptions
+            {
+                DashboardJobListLimit = _jobListLimit
+            };
+            var mySqlStorageMock = new Mock<MySqlStorage>(_connection, storageOptions);
             mySqlStorageMock
                 .Setup(m => m.QueueProviders)
                 .Returns(new PersistentJobQueueProviderCollection(defaultProviderMock.Object));
 
             _storage = mySqlStorageMock.Object;
-            _sut = new MySqlMonitoringApi(_storage, _jobListLimit);
+            _sut = new MySqlMonitoringApi(_storage, storageOptions);
         }
 
         public void Dispose()
@@ -202,7 +206,7 @@ namespace Hangfire.MySql.Tests.Monitoring
         public void GetStatistics_ShouldReturnRecurringCount()
         {
             const int expectedRecurringCount = 1;
-            
+
             StatisticsDto result = null;
             _storage.UseConnection(connection =>
             {
@@ -223,7 +227,7 @@ namespace Hangfire.MySql.Tests.Monitoring
 
             _storage.UseConnection(connection =>
             {
-                var jobId = 
+                var jobId =
                     connection.ExecuteScalar<string>(
                     "insert into Job (CreatedAt,InvocationData,Arguments,ExpireAt) " +
                     "values (@createdAt, @invocationData, @arguments,@expireAt);" +
@@ -264,7 +268,7 @@ namespace Hangfire.MySql.Tests.Monitoring
             var properties = new Dictionary<string, string>();
             properties["CurrentUICulture"] = "en-US";
             properties["CurrentCulture"] = "lt-LT";
-           
+
             JobDetailsDto result = null;
 
             _storage.UseConnection(connection =>
@@ -308,11 +312,11 @@ namespace Hangfire.MySql.Tests.Monitoring
 
                     new
                     {
-                        createdAt = _createdAt, 
-                        invocationData = _invocationData, 
-                        arguments = _arguments, 
-                        expireAt = _expireAt, 
-                        jobStateName, 
+                        createdAt = _createdAt,
+                        invocationData = _invocationData,
+                        arguments = _arguments,
+                        expireAt = _expireAt,
+                        jobStateName,
                         stateData
                     });
 

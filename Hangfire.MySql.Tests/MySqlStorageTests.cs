@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Hangfire.MySql.Tests
 {
-    public class MySqlStorageTests :  IClassFixture<TestDatabaseFixture>
+    public class MySqlStorageTests : IClassFixture<TestDatabaseFixture>
     {
         private readonly MySqlStorageOptions _options;
 
@@ -18,9 +18,9 @@ namespace Hangfire.MySql.Tests
         public void Ctor_ThrowsAnException_WhenConnectionStringIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new MySqlStorage((string)null));
+                () => new MySqlStorage((string)null, new MySqlStorageOptions()));
 
-            Assert.Equal("nameOrConnectionString", exception.ParamName);
+            Assert.Equal("connectionString", exception.ParamName);
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace Hangfire.MySql.Tests
             var exception = Assert.Throws<ArgumentNullException>(
                 () => new MySqlStorage("hello", null));
 
-            Assert.Equal("options", exception.ParamName);
+            Assert.Equal("storageOptions", exception.ParamName);
         }
 
         [Fact, CleanDatabase]
@@ -37,7 +37,7 @@ namespace Hangfire.MySql.Tests
         {
             using (var connection = ConnectionUtils.CreateConnection())
             {
-                var storage = new MySqlStorage(connection);
+                var storage = new MySqlStorage(connection, _options);
 
                 Assert.NotNull(storage);
             }

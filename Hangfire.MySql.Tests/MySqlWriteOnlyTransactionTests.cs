@@ -28,7 +28,7 @@ namespace Hangfire.MySql.Tests
         public void Ctor_ThrowsAnException_IfStorageIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new MySqlWriteOnlyTransaction(null));
+                () => new MySqlWriteOnlyTransaction(null, new MySqlStorageOptions()));
 
             Assert.Equal("storage", exception.ParamName);
         }
@@ -183,7 +183,7 @@ select last_insert_id() as Id";
                 Commit(sql, x => x.IncrementCounter("my-key"));
 
                 var record = sql.Query("select * from Counter").Single();
-                
+
                 Assert.Equal("my-key", record.Key);
                 Assert.Equal(1, record.Value);
                 Assert.Equal((DateTime?)null, record.ExpireAt);
@@ -203,7 +203,7 @@ select last_insert_id() as Id";
                 Assert.Equal(1, record.Value);
                 Assert.NotNull(record.ExpireAt);
 
-                var expireAt = (DateTime) record.ExpireAt;
+                var expireAt = (DateTime)record.ExpireAt;
 
                 Assert.True(DateTime.UtcNow.AddHours(23) < expireAt);
                 Assert.True(expireAt < DateTime.UtcNow.AddHours(25));
@@ -222,7 +222,7 @@ select last_insert_id() as Id";
                 });
 
                 var recordCount = sql.Query<int>("select count(*) from Counter").Single();
-                
+
                 Assert.Equal(2, recordCount);
             });
         }
@@ -323,7 +323,7 @@ select last_insert_id() as Id";
                 });
 
                 var recordCount = sql.Query<int>("select count(*) from `Set`").Single();
-                
+
                 Assert.Equal(1, recordCount);
             });
         }
@@ -718,7 +718,7 @@ insert into `Set` (`Key`, `Value`, Score) values (@key, @value, 0.0)";
 
             UseConnection(sql =>
             {
-                sql.Execute(arrangeSql, new []
+                sql.Execute(arrangeSql, new[]
                 {
                     new { key = "set-1", value = "1" },
                     new { key = "set-2", value = "1" }
@@ -973,10 +973,10 @@ values (@key, @expireAt)";
             MySqlConnection connection,
             Action<MySqlWriteOnlyTransaction> action)
         {
-            var storage = new Mock<MySqlStorage>(connection);
+            var storage = new Mock<MySqlStorage>(connection, new MySqlStorageOptions());
             storage.Setup(x => x.QueueProviders).Returns(_queueProviders);
 
-            using (var transaction = new MySqlWriteOnlyTransaction(storage.Object))
+            using (var transaction = new MySqlWriteOnlyTransaction(storage.Object, new MySqlStorageOptions()))
             {
                 action(transaction);
                 transaction.Commit();

@@ -20,7 +20,7 @@ namespace Hangfire.MySql.Tests
         [Fact]
         public void Ctor_ThrowsAnException_WhenStorageIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new ExpirationManager(null));
+            Assert.Throws<ArgumentNullException>(() => new ExpirationManager(null, new MySqlStorageOptions()));
         }
 
         [Fact, CleanDatabase]
@@ -73,7 +73,7 @@ namespace Hangfire.MySql.Tests
                 // Arrange
                 connection
                     .Execute(
-                        "insert into AggregatedCounter (`Key`, Value, ExpireAt) values ('key', 1, @expireAt)", 
+                        "insert into AggregatedCounter (`Key`, Value, ExpireAt) values ('key', 1, @expireAt)",
                         new { expireAt = DateTime.UtcNow.AddMonths(-1) });
 
                 var manager = CreateManager(connection);
@@ -94,7 +94,7 @@ namespace Hangfire.MySql.Tests
                 // Arrange
                 connection.Execute(
                     "insert into Job (InvocationData, Arguments, CreatedAt, ExpireAt) " +
-                    "values ('', '', UTC_TIMESTAMP(), @expireAt)", 
+                    "values ('', '', UTC_TIMESTAMP(), @expireAt)",
                     new { expireAt = DateTime.UtcNow.AddMonths(-1) });
 
                 var manager = CreateManager(connection);
@@ -114,7 +114,7 @@ namespace Hangfire.MySql.Tests
             {
                 // Arrange
                 connection.Execute(
-                    "insert into List (`Key`, ExpireAt) values ('key', @expireAt)", 
+                    "insert into List (`Key`, ExpireAt) values ('key', @expireAt)",
                     new { expireAt = DateTime.UtcNow.AddMonths(-1) });
 
                 var manager = CreateManager(connection);
@@ -134,7 +134,7 @@ namespace Hangfire.MySql.Tests
             {
                 // Arrange
                 connection.Execute(
-                    "insert into `Set` (`Key`, Score, Value, ExpireAt) values ('key', 0, '', @expireAt)", 
+                    "insert into `Set` (`Key`, Score, Value, ExpireAt) values ('key', 0, '', @expireAt)",
                     new { expireAt = DateTime.UtcNow.AddMonths(-1) });
 
                 var manager = CreateManager(connection);
@@ -178,7 +178,7 @@ values ('key', 1, @expireAt);
 select last_insert_id() as Id";
 
             var id = connection.Query(insertSql, new { @expireAt = expireAt }).Single();
-            var recordId = (int) id.Id;
+            var recordId = (int)id.Id;
             return recordId;
         }
 
@@ -196,8 +196,12 @@ select last_insert_id() as Id";
 
         private ExpirationManager CreateManager(MySqlConnection connection)
         {
-            var storage = new MySqlStorage(connection);
-            return new ExpirationManager(storage, TimeSpan.Zero);
+            var options = new MySqlStorageOptions
+            {
+                JobExpirationCheckInterval = TimeSpan.Zero
+            };
+            var storage = new MySqlStorage(connection, options);
+            return new ExpirationManager(storage, options);
         }
     }
 }
