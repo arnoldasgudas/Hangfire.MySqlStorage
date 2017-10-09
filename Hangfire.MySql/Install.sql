@@ -72,7 +72,7 @@ CREATE TABLE `[tablesPrefix]JobParameter` (
   PRIMARY KEY (`Id`),
   CONSTRAINT `IX_JobParameter_JobId_Name` UNIQUE (`JobId`,`Name`),
   KEY `FK_JobParameter_Job` (`JobId`),
-  CONSTRAINT `FK_JobParameter_Job` FOREIGN KEY (`JobId`) REFERENCES `Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `FK_JobParameter_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ----------------------------
@@ -101,7 +101,7 @@ CREATE TABLE `[tablesPrefix]JobState` (
   `Data` longtext,
   PRIMARY KEY (`Id`),
   KEY `FK_JobState_Job` (`JobId`),
-  CONSTRAINT `FK_JobState_Job` FOREIGN KEY (`JobId`) REFERENCES `Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `FK_JobState_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ----------------------------
@@ -140,7 +140,7 @@ CREATE TABLE `[tablesPrefix]State`
 	Data longtext NULL,
 	PRIMARY KEY (`Id`),
 	KEY `FK_HangFire_State_Job` (`JobId`),
-	CONSTRAINT `FK_HangFire_State_Job` FOREIGN KEY (`JobId`) REFERENCES `Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+	CONSTRAINT `FK_HangFire_State_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB  CHARSET=latin1;
 
 CREATE TABLE `[tablesPrefix]List`
