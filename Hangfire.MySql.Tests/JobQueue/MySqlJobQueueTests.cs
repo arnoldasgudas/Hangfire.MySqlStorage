@@ -14,11 +14,12 @@ namespace Hangfire.MySql.Tests.JobQueue
         private static readonly string[] DefaultQueues = { "default" };
         private readonly MySqlStorage _storage;
         private readonly MySqlConnection _connection;
+        private readonly MySqlStorageOptions _storageOptions = new MySqlStorageOptions();
 
         public MySqlJobQueueTests()
         {
             _connection = ConnectionUtils.CreateConnection();
-            _storage = new MySqlStorage(_connection);
+            _storage = new MySqlStorage(_connection, _storageOptions);
         }
 
         public void Dispose()
@@ -127,7 +128,7 @@ select last_insert_id() as Id;";
             });
         }
 
-        [Fact,CleanDatabase]
+        [Fact, CleanDatabase]
         public void Dequeue_ShouldDeleteAJob()
         {
             const string arrangeSql = @"
@@ -161,7 +162,7 @@ values (last_insert_id(), @queue)";
             });
         }
 
-        [Fact,CleanDatabase]
+        [Fact, CleanDatabase]
         public void Dequeue_ShouldFetchATimedOutJobs_FromTheSpecifiedQueue()
         {
             const string arrangeSql = @"
@@ -194,7 +195,7 @@ values (last_insert_id(), @queue, @fetchedAt)";
             });
         }
 
-        [Fact,CleanDatabase]
+        [Fact, CleanDatabase]
         public void Dequeue_ShouldSetFetchedAt_OnlyForTheFetchedJob()
         {
             const string arrangeSql = @"
@@ -319,9 +320,9 @@ values (last_insert_id(), @queue)";
 
         public static void Sample(string arg1, string arg2) { }
 
-        private static MySqlJobQueue CreateJobQueue(MySqlConnection connection)
+        private MySqlJobQueue CreateJobQueue(MySqlConnection connection)
         {
-            var storage = new MySqlStorage(connection);
+            var storage = new MySqlStorage(connection, _storageOptions);
             return new MySqlJobQueue(storage, new MySqlStorageOptions());
         }
     }

@@ -20,9 +20,9 @@ namespace Hangfire.MySql.Tests.JobQueue
             _connection = new MySqlConnection(ConnectionUtils.GetConnectionString());
             _connection.Open();
 
-            _storage = new MySqlStorage(_connection);
-
-            _sut = new MySqlJobQueueMonitoringApi(_storage);
+            var storageOptions = new MySqlStorageOptions();
+            _storage = new MySqlStorage(_connection, storageOptions);
+            _sut = new MySqlJobQueueMonitoringApi(_storage, storageOptions);
         }
 
         public void Dispose()
@@ -35,7 +35,7 @@ namespace Hangfire.MySql.Tests.JobQueue
         public void GetEnqueuedAndFetchedCount_ReturnsEqueuedCount_WhenExists()
         {
             EnqueuedAndFetchedCountDto result = null;
-            
+
             _storage.UseConnection(connection =>
             {
                 connection.Execute(
@@ -69,14 +69,14 @@ namespace Hangfire.MySql.Tests.JobQueue
                 {
                     connection.Execute(
                         "insert into JobQueue (JobId, Queue) " +
-                        "values (@jobId, @queue);", new {jobId = i, queue = _queue});
+                        "values (@jobId, @queue);", new { jobId = i, queue = _queue });
                 }
 
                 result = _sut.GetEnqueuedJobIds(_queue, 3, 2).ToArray();
 
                 connection.Execute("delete from JobQueue");
             });
-            
+
             Assert.Equal(2, result.Length);
             Assert.Equal(4, result[0]);
             Assert.Equal(5, result[1]);

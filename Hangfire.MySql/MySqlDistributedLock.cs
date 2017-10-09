@@ -13,29 +13,31 @@ namespace Hangfire.MySql
         private readonly string _resource;
         private readonly TimeSpan _timeout;
         private readonly MySqlStorage _storage;
+        private readonly MySqlStorageOptions _storageOptions;
         private readonly DateTime _start;
         private readonly CancellationToken _cancellationToken;
 
         private const int DelayBetweenPasses = 100;
 
-        public MySqlDistributedLock(MySqlStorage storage, string resource, TimeSpan timeout)
-            : this(storage.CreateAndOpenConnection(), resource, timeout)
+        public MySqlDistributedLock(MySqlStorage storage, string resource, TimeSpan timeout, MySqlStorageOptions storageOptions)
+            : this(storage.CreateAndOpenConnection(), resource, timeout, storageOptions)
         {
-            _storage = storage;
+            _storage = storage;          
         }
 
         private readonly IDbConnection _connection;
 
-        public MySqlDistributedLock(IDbConnection connection, string resource, TimeSpan timeout)
-            : this(connection, resource, timeout, new CancellationToken())
+        public MySqlDistributedLock(IDbConnection connection, string resource, TimeSpan timeout, MySqlStorageOptions storageOptions)
+            : this(connection, resource, timeout, storageOptions, new CancellationToken())
         {
         }
 
         public MySqlDistributedLock(
-            IDbConnection connection, string resource, TimeSpan timeout, CancellationToken cancellationToken)
+            IDbConnection connection, string resource, TimeSpan timeout, MySqlStorageOptions storageOptions, CancellationToken cancellationToken)
         {
             Logger.TraceFormat("MySqlDistributedLock resource={0}, timeout={1}", resource, timeout);
 
+            _storageOptions = storageOptions;
             _resource = resource;
             _timeout = timeout;
             _connection = connection;
@@ -52,11 +54,11 @@ namespace Hangfire.MySql
             return
                 _connection
                     .Execute(
-                        "INSERT INTO DistributedLock (Resource, CreatedAt) " +
+                        $"INSERT INTO `{_storageOptions.TablesPrefix}DistributedLock` (Resource, CreatedAt) " +
                         "  SELECT @resource, @now " +
                         "  FROM dual " +
                         "  WHERE NOT EXISTS ( " +
-                        "  		SELECT * FROM DistributedLock " +
+                        $"  		SELECT * FROM `{_storageOptions.TablesPrefix}DistributedLock` " +
                         "     	WHERE Resource = @resource " +
                         "       AND CreatedAt > @expired)", 
                         new
@@ -113,7 +115,7 @@ namespace Hangfire.MySql
 
             _connection
                 .Execute(
-                    "DELETE FROM DistributedLock  " +
+                    $"DELETE FROM `{_storageOptions.TablesPrefix}DistributedLock`  " +
                     "WHERE Resource = @resource",
                     new
                     {

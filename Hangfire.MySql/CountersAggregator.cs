@@ -14,19 +14,19 @@ namespace Hangfire.MySql
         private static readonly TimeSpan DelayBetweenPasses = TimeSpan.FromMilliseconds(500);
 
         private readonly MySqlStorage _storage;
-        private readonly TimeSpan _interval;
+        private readonly MySqlStorageOptions _storageOptions;
 
-        public CountersAggregator(MySqlStorage storage, TimeSpan interval)
+        public CountersAggregator(MySqlStorage storage, MySqlStorageOptions storageOptions)
         {
             if (storage == null) throw new ArgumentNullException("storage");
 
             _storage = storage;
-            _interval = interval;
+            _storageOptions = storageOptions;
         }
 
         public void Execute(CancellationToken cancellationToken)
         {
-            Logger.DebugFormat("Aggregating records in 'Counter' table...");
+            Logger.DebugFormat($"Aggregating records in '{_storageOptions.TablesPrefix}Counter' table...");
 
             int removedCount = 0;
 
@@ -46,7 +46,7 @@ namespace Hangfire.MySql
                 }
             } while (removedCount >= NumberOfRecordsInSinglePass);
 
-            cancellationToken.WaitHandle.WaitOne(_interval);
+            cancellationToken.WaitHandle.WaitOne(_storageOptions.CountersAggregateInterval);
         }
 
         public override string ToString()
@@ -54,24 +54,24 @@ namespace Hangfire.MySql
             return GetType().ToString();
         }
 
-        private static string GetAggregationQuery()
+        private string GetAggregationQuery()
         {
-            return @"
+            return $@"
 SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
 START TRANSACTION;
 
-INSERT INTO AggregatedCounter (`Key`, Value, ExpireAt)
+INSERT INTO `{_storageOptions.TablesPrefix}AggregatedCounter` (`Key`, Value, ExpireAt)
     SELECT `Key`, SUM(Value) as Value, MAX(ExpireAt) AS ExpireAt 
     FROM (
             SELECT `Key`, Value, ExpireAt
-            FROM Counter
+            FROM `{_storageOptions.TablesPrefix}Counter`
             LIMIT @count) tmp
 	GROUP BY `Key`
         ON DUPLICATE KEY UPDATE 
             Value = Value + VALUES(Value),
             ExpireAt = GREATEST(ExpireAt,VALUES(ExpireAt));
 
-DELETE FROM `Counter`
+DELETE FROM `{_storageOptions.TablesPrefix}Counter`
 LIMIT @count;
 
 COMMIT;";

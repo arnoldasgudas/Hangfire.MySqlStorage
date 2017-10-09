@@ -13,10 +13,13 @@ namespace Hangfire.MySql.JobQueue
         private DateTime _cacheUpdated;
 
         private readonly MySqlStorage _storage;
-        public MySqlJobQueueMonitoringApi(MySqlStorage storage)
+        private readonly MySqlStorageOptions _storageOptions;
+
+        public MySqlJobQueueMonitoringApi(MySqlStorage storage, MySqlStorageOptions storageOptions)
         {
             if (storage == null) throw new ArgumentNullException("storage");
             _storage = storage;
+            _storageOptions = storageOptions;
         }
 
         public IEnumerable<string> GetQueues()
@@ -27,7 +30,7 @@ namespace Hangfire.MySql.JobQueue
                 {
                     var result = _storage.UseConnection(connection =>
                     {
-                        return connection.Query("select distinct(Queue) from JobQueue").Select(x => (string)x.Queue).ToList();
+                        return connection.Query($"select distinct(Queue) from `{_storageOptions.TablesPrefix}JobQueue`").Select(x => (string)x.Queue).ToList();
                     });
 
                     _queuesCache = result;
@@ -40,11 +43,11 @@ namespace Hangfire.MySql.JobQueue
 
         public IEnumerable<int> GetEnqueuedJobIds(string queue, int @from, int perPage)
         {
-            string sqlQuery = @"
+            string sqlQuery = $@"
 SET @rank=0;
 select r.JobId from (
   select jq.JobId, @rank := @rank+1 AS rank 
-  from JobQueue jq
+  from `{_storageOptions.TablesPrefix}JobQueue` jq
   where jq.Queue = @queue
   order by jq.Id
 ) as r
@@ -67,7 +70,7 @@ where r.rank between @start and @end;";
             {
                 var result = 
                     connection.Query<int>(
-                        "select count(Id) from JobQueue where Queue = @queue", new { queue = queue }).Single();
+                        $"select count(Id) from `{_storageOptions.TablesPrefix}JobQueue` where Queue = @queue", new { queue = queue }).Single();
 
                 return new EnqueuedAndFetchedCountDto
                 {

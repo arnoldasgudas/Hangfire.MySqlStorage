@@ -15,9 +15,13 @@ namespace Hangfire.MySql.Tests
 
         public CountersAggregatorTests()
         {
+            var options = new MySqlStorageOptions
+            {
+                CountersAggregateInterval = TimeSpan.Zero
+            };
             _connection = ConnectionUtils.CreateConnection();
-            _storage = new MySqlStorage(_connection);
-            _sut = new CountersAggregator(_storage, TimeSpan.Zero);
+            _storage = new MySqlStorage(_connection, options);
+            _sut = new CountersAggregator(_storage, options);
         }
         public void Dispose()
         {
