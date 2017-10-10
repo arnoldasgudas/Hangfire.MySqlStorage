@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Transactions;
 using Dapper;
 using Hangfire.Logging;
 using MySql.Data.MySqlClient;
