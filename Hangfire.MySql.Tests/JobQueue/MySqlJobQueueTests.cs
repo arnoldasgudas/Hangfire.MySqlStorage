@@ -265,6 +265,7 @@ insert into Job (InvocationData, Arguments, CreatedAt)
 values (@invocationData, @arguments, UTC_TIMESTAMP());
 insert into JobQueue (JobId, Queue)
 values (last_insert_id(), @queue)";
+            var queues = new[] { "critical", "default" };
 
             _storage.UseConnection(connection =>
             {
@@ -278,19 +279,17 @@ values (last_insert_id(), @queue)";
 
                 var queue = CreateJobQueue(connection);
 
-                var critical = (MySqlFetchedJob)queue.Dequeue(
-                    new[] { "critical", "default" },
+                var firstJob = (MySqlFetchedJob)queue.Dequeue(
+                    queues,
                     CreateTimingOutCancellationToken());
+                Assert.NotNull(firstJob.JobId);
+                Assert.Contains(firstJob.Queue, queues);
 
-                Assert.NotNull(critical.JobId);
-                Assert.Equal("critical", critical.Queue);
-
-                var @default = (MySqlFetchedJob)queue.Dequeue(
-                    new[] { "critical", "default" },
+                var secondJob = (MySqlFetchedJob)queue.Dequeue(
+                    queues,
                     CreateTimingOutCancellationToken());
-
-                Assert.NotNull(@default.JobId);
-                Assert.Equal("default", @default.Queue);
+                Assert.NotNull(secondJob.JobId);
+                Assert.Contains(secondJob.Queue, queues);
             });
         }
 

@@ -10,7 +10,7 @@ CREATE TABLE `[tablesPrefix]Job` (
   `CreatedAt` datetime(6) NOT NULL,
   `ExpireAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  KEY `IX_Job_StateName[tablesPrefix]` (`StateName`)
+  KEY `IX_[tablesPrefix]Job_StateName` (`StateName`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
@@ -23,7 +23,7 @@ CREATE TABLE `[tablesPrefix]Counter` (
   `Value` int(11) NOT NULL,
   `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  KEY `IX_Counter_Key[tablesPrefix]` (`Key`)
+  KEY `IX_[tablesPrefix]Counter_Key` (`Key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
@@ -33,7 +33,7 @@ CREATE TABLE `[tablesPrefix]AggregatedCounter` (
 	`Value` int(11) NOT NULL,
 	ExpireAt datetime DEFAULT NULL,
 	PRIMARY KEY (`Id`),
-	UNIQUE KEY `IX_CounterAggregated_Key[tablesPrefix]` (`Key`)
+	UNIQUE KEY `IX_[tablesPrefix]CounterAggregated_Key` (`Key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
@@ -56,7 +56,7 @@ CREATE TABLE `[tablesPrefix]Hash` (
   `Value` longtext,
   `ExpireAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_Hash_Key_Field[tablesPrefix]` (`Key`,`Field`)
+  UNIQUE KEY `IX_[tablesPrefix]Hash_Key_Field` (`Key`,`Field`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
@@ -70,9 +70,9 @@ CREATE TABLE `[tablesPrefix]JobParameter` (
   `Value` longtext,
 
   PRIMARY KEY (`Id`),
-  CONSTRAINT `IX_JobParameter_JobId_Name[tablesPrefix]` UNIQUE (`JobId`,`Name`),
-  KEY `FK_JobParameter_Job[tablesPrefix]` (`JobId`),
-  CONSTRAINT `FK_JobParameter_Job[tablesPrefix]` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `IX_[tablesPrefix]JobParameter_JobId_Name` UNIQUE (`JobId`,`Name`),
+  KEY `FK_[tablesPrefix]JobParameter_Job` (`JobId`),
+  CONSTRAINT `FK_[tablesPrefix]JobParameter_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ----------------------------
@@ -86,7 +86,7 @@ CREATE TABLE `[tablesPrefix]JobQueue` (
   `FetchToken` varchar(36) DEFAULT NULL,
   
   PRIMARY KEY (`Id`),
-  INDEX `IX_JobQueue_QueueAndFetchedAt[tablesPrefix]` (`Queue`,`FetchedAt`)
+  INDEX `IX_[tablesPrefix]JobQueue_QueueAndFetchedAt` (`Queue`,`FetchedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ----------------------------
@@ -100,8 +100,8 @@ CREATE TABLE `[tablesPrefix]JobState` (
   `CreatedAt` datetime(6) NOT NULL,
   `Data` longtext,
   PRIMARY KEY (`Id`),
-  KEY `FK_JobState_Job[tablesPrefix]` (`JobId`),
-  CONSTRAINT `FK_JobState_Job[tablesPrefix]` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `FK_[tablesPrefix]JobState_Job` (`JobId`),
+  CONSTRAINT `FK_[tablesPrefix]JobState_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ----------------------------
@@ -125,7 +125,7 @@ CREATE TABLE `[tablesPrefix]Set` (
   `Score` float NOT NULL,
   `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_Set_Key_Value[tablesPrefix]` (`Key`,`Value`)
+  UNIQUE KEY `IX_[tablesPrefix]Set_Key_Value` (`Key`,`Value`)
 ) ENGINE=InnoDB  CHARSET=latin1;
 
 
@@ -139,8 +139,8 @@ CREATE TABLE `[tablesPrefix]State`
 	CreatedAt datetime(6) NOT NULL,
 	Data longtext NULL,
 	PRIMARY KEY (`Id`),
-	KEY `FK_HangFire_State_Job[tablesPrefix]` (`JobId`),
-	CONSTRAINT `FK_HangFire_State_Job[tablesPrefix]` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+	KEY `FK_[tablesPrefix]HangFire_State_Job` (`JobId`),
+	CONSTRAINT `FK_[tablesPrefix]HangFire_State_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB  CHARSET=latin1;
 
 CREATE TABLE `[tablesPrefix]List`

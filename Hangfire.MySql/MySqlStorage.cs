@@ -164,22 +164,29 @@ namespace Hangfire.MySql
         internal T UseTransaction<T>(
             [InstantHandle] Func<MySqlConnection, T> func, IsolationLevel? isolationLevel)
         {
-            return UseConnection(connection =>
-            {
-                using (var tScope = new TransactionScope(TransactionScopeOption.Required,
-                    new TransactionOptions
-                    {
-                        IsolationLevel = isolationLevel ?? _storageOptions.TransactionIsolationLevel ??
-                                         System.Transactions.IsolationLevel.ReadUncommitted
-                    },
-                    TransactionScopeAsyncFlowOption.Enabled))
+            using (var tScope = new TransactionScope(TransactionScopeOption.Required,
+                new TransactionOptions
                 {
+                    IsolationLevel = isolationLevel ?? IsolationLevel.ReadCommitted
+                },
+                TransactionScopeAsyncFlowOption.Enabled))
+            {
+
+                MySqlConnection connection = null;
+
+                try
+                {
+                    connection = CreateAndOpenConnection();
                     T result = func(connection);
                     tScope.Complete();
 
                     return result;
                 }
-            });
+                finally
+                {
+                    ReleaseConnection(connection);
+                }
+            }
         }
 
         internal void UseConnection([InstantHandle] Action<MySqlConnection> action)
