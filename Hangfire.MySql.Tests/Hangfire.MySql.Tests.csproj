@@ -4,12 +4,12 @@
         <IsPackable>false</IsPackable>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Moq" Version="4.7.137" />
-        <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-        <PackageReference Include="xunit" Version="2.3.0" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.3.0" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
-        <PackageReference Include="Dapper" Version="1.50.2" />
+        <PackageReference Include="Moq" Version="4.8.0-rc1" />
+        <PackageReference Include="Newtonsoft.Json" Version="11.0.1-beta1" />
+        <PackageReference Include="xunit" Version="2.3.1" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.0-preview-20171211-02" />
+        <PackageReference Include="Dapper" Version="1.50.4" />
         <PackageReference Include="Hangfire.Core" Version="1.6.17" />
     </ItemGroup>
     <ItemGroup>
