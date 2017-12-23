@@ -83,7 +83,7 @@ namespace Hangfire.MySql
                         cancellationToken.WaitHandle.WaitOne(DelayBetweenPasses);
                         cancellationToken.ThrowIfCancellationRequested();
                     }
-                } while (removedCount != 0);
+                } while (removedCount > 0);
             }
 
             cancellationToken.WaitHandle.WaitOne(_storageOptions.JobExpirationCheckInterval);
