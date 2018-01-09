@@ -62,7 +62,6 @@ namespace Hangfire.MySql
                             {
                                 removedCount = connection.Execute(
                                     String.Format(
-                                        "select null from `{0}` where ExpireAt < @now; " +
                                         "delete from `{0}` where ExpireAt < @now limit @count;", table),
                                     new { now = DateTime.UtcNow, count = NumberOfRecordsInSinglePass });
                             }
@@ -83,7 +82,7 @@ namespace Hangfire.MySql
                         cancellationToken.WaitHandle.WaitOne(DelayBetweenPasses);
                         cancellationToken.ThrowIfCancellationRequested();
                     }
-                } while (removedCount != 0);
+                } while (removedCount > 0);
             }
 
             cancellationToken.WaitHandle.WaitOne(_storageOptions.JobExpirationCheckInterval);
