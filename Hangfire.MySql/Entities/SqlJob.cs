@@ -8,7 +8,7 @@ namespace Hangfire.MySql.Entities
         public string InvocationData { get; set; }
         public string Arguments { get; set; }
         public DateTime CreatedAt { get; set; }
-        public DateTime? ExpireAt { get; set; }
+        public DateTime ExpireAt { get; set; }
 
         public DateTime? FetchedAt { get; set; }
 

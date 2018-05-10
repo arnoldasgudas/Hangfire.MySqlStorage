@@ -458,10 +458,15 @@ from Job j
 left join State s on s.Id = j.StateId
 where j.Id in @jobIds";
 
-            var jobs = connection.Query<SqlJob>(
+            var jobs = new List<SqlJob>();
+
+            if (jobIds.Any())
+            {
+                jobs = connection.Query<SqlJob>(
                 enqueuedJobsSql,
                 new { jobIds = jobIds })
                 .ToList();
+            }
 
             return DeserializeJobs(
                 jobs,
@@ -485,10 +490,14 @@ from Job j
 left join State s on s.Id = j.StateId
 where j.Id in @jobIds";
 
-            var jobs = connection.Query<SqlJob>(
+            var jobs = new List<SqlJob>();
+            if (jobIds.Any())
+            {
+                jobs = connection.Query<SqlJob>(
                 fetchedJobsSql,
                 new { jobIds = jobIds })
                 .ToList();
+            }
 
             var result = new List<KeyValuePair<string, FetchedJobDto>>(jobs.Count);
 
