@@ -37,6 +37,7 @@ GlobalConfiguration.Configuration.UseStorage(
             PrepareSchemaIfNecessary = true,
             DashboardJobListLimit = 50000,
             TransactionTimeout = TimeSpan.FromMinutes(1),
+            TablesPrefix = "Hangfire"
         }));
 ```
 Description of optional parameters:
@@ -47,6 +48,7 @@ Description of optional parameters:
 - `PrepareSchemaIfNecessary` - if set to `true`, it creates database tables. Default is `true`.
 - `DashboardJobListLimit` - dashboard job list limit. Default is 50000.
 - `TransactionTimeout` - transaction timeout. Default is 1 minute.
+- `TablesPrefix` - prefix for the tables in database. Default is none
 
 ### How to limit number of open connections
 
