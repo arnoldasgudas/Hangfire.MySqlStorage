@@ -1,5 +1,5 @@
 # Hangfire MySql Storage Implementation
-[![NuGet version](https://badge.fury.io/nu/Hangfire.MySqlStorage.NetFull.svg)](https://www.nuget.org/packages/Hangfire.MySqlStorage.NetFull)
+[![NuGet version](https://badge.fury.io/nu/Hangfire.MySqlStorage.svg)](https://www.nuget.org/packages/Hangfire.MySqlStorage)
 
 MySql storage implementation of [Hangfire](http://hangfire.io/) - fire-and-forget, delayed and recurring tasks runner for .NET. Scalable and reliable background job runner. Supports multiple servers, CPU and I/O intensive, long-running and short-running jobs.
 
