@@ -4,9 +4,9 @@
 CREATE TABLE `Job` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `StateId` int(11) DEFAULT NULL,
-  `StateName` varchar(20) DEFAULT NULL,
-  `InvocationData` longtext NOT NULL,
-  `Arguments` longtext NOT NULL,
+  `StateName` varchar(20) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
+  `InvocationData` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `Arguments` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `CreatedAt` datetime(6) NOT NULL,
   `ExpireAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`),
@@ -19,7 +19,7 @@ CREATE TABLE `Job` (
 -- ----------------------------
 CREATE TABLE `Counter` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Key` varchar(100) NOT NULL,
+  `Key` varchar(100) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `Value` int(11) NOT NULL,
   `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
@@ -29,7 +29,7 @@ CREATE TABLE `Counter` (
 
 CREATE TABLE `AggregatedCounter` (
 	Id int(11) NOT NULL AUTO_INCREMENT,
-	`Key` varchar(100) NOT NULL,
+	`Key` varchar(100) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
 	`Value` int(11) NOT NULL,
 	ExpireAt datetime DEFAULT NULL,
 	PRIMARY KEY (`Id`),
@@ -41,7 +41,7 @@ CREATE TABLE `AggregatedCounter` (
 -- Table structure for `DistributedLock`
 -- ----------------------------
 CREATE TABLE `DistributedLock` (
-  `Resource` varchar(100) NOT NULL,
+  `Resource` varchar(100) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `CreatedAt` datetime(6) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -51,9 +51,9 @@ CREATE TABLE `DistributedLock` (
 -- ----------------------------
 CREATE TABLE `Hash` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Key` varchar(100) NOT NULL,
-  `Field` varchar(40) NOT NULL,
-  `Value` longtext,
+  `Key` varchar(100) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `Field` varchar(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `Value` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `ExpireAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `IX_Hash_Key_Field` (`Key`,`Field`)
@@ -66,8 +66,8 @@ CREATE TABLE `Hash` (
 CREATE TABLE `JobParameter` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `JobId` int(11) NOT NULL,
-  `Name` varchar(40) NOT NULL,
-  `Value` longtext,
+  `Name` varchar(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `Value` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci,
 
   PRIMARY KEY (`Id`),
   CONSTRAINT `IX_JobParameter_JobId_Name` UNIQUE (`JobId`,`Name`),
@@ -81,9 +81,9 @@ CREATE TABLE `JobParameter` (
 CREATE TABLE `JobQueue` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `JobId` int(11) NOT NULL,
-  `Queue` varchar(50) NOT NULL,
+  `Queue` varchar(50) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `FetchedAt` datetime(6) DEFAULT NULL,
-  `FetchToken` varchar(36) DEFAULT NULL,
+  `FetchToken` varchar(36) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   
   PRIMARY KEY (`Id`),
   INDEX `IX_JobQueue_QueueAndFetchedAt` (`Queue`,`FetchedAt`)
@@ -95,10 +95,10 @@ CREATE TABLE `JobQueue` (
 CREATE TABLE `JobState` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `JobId` int(11) NOT NULL,
-  `Name` varchar(20) NOT NULL,
-  `Reason` varchar(100) DEFAULT NULL,
+  `Name` varchar(20) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `Reason` varchar(100) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `CreatedAt` datetime(6) NOT NULL,
-  `Data` longtext,
+  `Data` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   PRIMARY KEY (`Id`),
   KEY `FK_JobState_Job` (`JobId`),
   CONSTRAINT `FK_JobState_Job` FOREIGN KEY (`JobId`) REFERENCES `Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -108,8 +108,8 @@ CREATE TABLE `JobState` (
 -- Table structure for `Server`
 -- ----------------------------
 CREATE TABLE `Server` (
-  `Id` varchar(100) NOT NULL,
-  `Data` longtext NOT NULL,
+  `Id` varchar(100) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `Data` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `LastHeartbeat` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -120,8 +120,8 @@ CREATE TABLE `Server` (
 -- ----------------------------
 CREATE TABLE `Set` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Key` varchar(100) NOT NULL,
-  `Value` varchar(256) NOT NULL,
+  `Key` varchar(100) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `Value` varchar(256) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `Score` float NOT NULL,
   `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
@@ -134,10 +134,10 @@ CREATE TABLE `State`
 (
 	Id int(11) NOT NULL AUTO_INCREMENT,
 	JobId int(11) NOT NULL,
-	Name varchar(20) NOT NULL,
-	Reason varchar(100) NULL,
+	Name varchar(20) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+	Reason varchar(100) CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL,
 	CreatedAt datetime(6) NOT NULL,
-	Data longtext NULL,
+	Data longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL,
 	PRIMARY KEY (`Id`),
 	KEY `FK_HangFire_State_Job` (`JobId`),
 	CONSTRAINT `FK_HangFire_State_Job` FOREIGN KEY (`JobId`) REFERENCES `Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -146,8 +146,8 @@ CREATE TABLE `State`
 CREATE TABLE `List`
 (
 	`Id` int(11) NOT NULL AUTO_INCREMENT,
-	`Key` varchar(100) NOT NULL,
-	`Value` longtext NULL,
+	`Key` varchar(100) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+	`Value` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL,
 	`ExpireAt` datetime(6) NULL,
 	PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB  CHARSET=utf8;
