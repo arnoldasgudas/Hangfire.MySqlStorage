@@ -52,13 +52,14 @@ namespace Hangfire.MySql
             return
                 _connection
                     .Execute(
+                        "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; " +
                         "INSERT INTO DistributedLock (Resource, CreatedAt) " +
                         "  SELECT @resource, @now " +
                         "  FROM dual " +
                         "  WHERE NOT EXISTS ( " +
                         "  		SELECT * FROM DistributedLock " +
                         "     	WHERE Resource = @resource " +
-                        "       AND CreatedAt > @expired)", 
+                        "       AND CreatedAt > @expired);", 
                         new
                         {
                             resource,
