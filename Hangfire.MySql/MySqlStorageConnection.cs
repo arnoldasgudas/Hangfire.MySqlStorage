@@ -285,7 +285,7 @@ namespace Hangfire.MySql
                     .Query<string>($@"
 select `Value` 
 from (
-	    select `Value`, @rownum := @rownum + 1 AS rank
+	    select `Value`, @rownum := @rownum + 1 AS 'rank'
 	    from `{_storageOptions.TablesPrefix}Set`,
             (select @rownum := 0) r 
         where `Key` = @key
@@ -422,7 +422,7 @@ where `Key` = @key) as s";
             string query = $@"
 select `Value` 
 from (
-        select `Value`, @rownum := @rownum + 1 AS rank
+        select `Value`, @rownum := @rownum + 1 AS 'rank'
 	    from `{_storageOptions.TablesPrefix}List`,
             (select @rownum := 0) r
         where `Key` = @key
