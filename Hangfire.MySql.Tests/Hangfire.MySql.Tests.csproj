@@ -4,13 +4,16 @@
         <IsPackable>false</IsPackable>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Moq" Version="4.7.145" />
-        <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-        <PackageReference Include="xunit" Version="2.3.1" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+        <PackageReference Include="Moq" Version="4.10.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+        <PackageReference Include="xunit" Version="2.4.1" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
-        <PackageReference Include="Dapper" Version="1.50.4" />
-        <PackageReference Include="Hangfire.Core" Version="1.6.17" />
+        <PackageReference Include="Dapper" Version="1.50.5" />
+        <PackageReference Include="Hangfire.Core" Version="1.6.21" />
     </ItemGroup>
     <ItemGroup>
         <Folder Include="Properties\" />
