@@ -33,7 +33,7 @@ namespace Hangfire.MySql.Tests
         public void Ctor_ThrowsAnException_WhenStorageIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new MySqlStorageConnection(null));
+                () => new MySqlStorageConnection(null, new MySqlStorageOptions()));
 
             Assert.Equal("storage", exception.ParamName);
         }
@@ -195,7 +195,7 @@ select last_insert_id() as Id;";
                     {
                         invocationData = JobHelper.ToJson(InvocationData.Serialize(job)),
                         stateName = "Succeeded",
-                        arguments = "['Arguments']"
+                        arguments = "[\"\\\"Arguments\\\"\"]"
                     }).Single();
 
                 var result = connection.GetJobData(((int)jobId.Id).ToString());
@@ -1355,8 +1355,8 @@ values (@key, @value, @expireAt, 0.0)";
         {
             using (var sqlConnection = ConnectionUtils.CreateConnection())
             {
-                var storage = new MySqlStorage(sqlConnection);
-                using (var connection = new MySqlStorageConnection(storage))
+                var storage = new MySqlStorage(sqlConnection, new MySqlStorageOptions());
+                using (var connection = new MySqlStorageConnection(storage, new MySqlStorageOptions()))
                 {
                     action(sqlConnection, connection);
                 }
@@ -1367,10 +1367,10 @@ values (@key, @value, @expireAt, 0.0)";
         {
             using (var sql = ConnectionUtils.CreateConnection())
             {
-                var storage = new Mock<MySqlStorage>(sql);
+                var storage = new Mock<MySqlStorage>(sql, new MySqlStorageOptions());
                 storage.Setup(x => x.QueueProviders).Returns(_providers);
 
-                using (var connection = new MySqlStorageConnection(storage.Object))
+                using (var connection = new MySqlStorageConnection(storage.Object, new MySqlStorageOptions()))
                 {
                     action(connection);
                 }

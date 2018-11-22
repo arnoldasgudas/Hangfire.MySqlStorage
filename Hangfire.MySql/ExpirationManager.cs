@@ -9,41 +9,36 @@ namespace Hangfire.MySql
 {
     internal class ExpirationManager : IServerComponent
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(ExpirationManager));
 
         private static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromSeconds(30);
         private const string DistributedLockKey = "expirationmanager";
         private static readonly TimeSpan DelayBetweenPasses = TimeSpan.FromSeconds(1);
         private const int NumberOfRecordsInSinglePass = 1000;
 
-        private static readonly string[] ProcessedTables =
-        {
-            "AggregatedCounter",
-            "Job",
-            "List",
-            "Set",
-            "Hash",
-        };
+        private readonly string[] _processedTables;
 
         private readonly MySqlStorage _storage;
-        private readonly TimeSpan _checkInterval;
+        private readonly MySqlStorageOptions _storageOptions;
 
-        public ExpirationManager(MySqlStorage storage)
-            : this(storage, TimeSpan.FromHours(1))
+        public ExpirationManager(MySqlStorage storage, MySqlStorageOptions storageOptions)
         {
-        }
+            _storage = storage ?? throw new ArgumentNullException("storage");
+            _storageOptions = storageOptions ?? throw new ArgumentNullException(nameof(storageOptions));
 
-        public ExpirationManager(MySqlStorage storage, TimeSpan checkInterval)
-        {
-            if (storage == null) throw new ArgumentNullException("storage");
-
-            _storage = storage;
-            _checkInterval = checkInterval;
+            _processedTables = new[]
+            {
+                $"{storageOptions.TablesPrefix}AggregatedCounter",
+                $"{storageOptions.TablesPrefix}Job",
+                $"{storageOptions.TablesPrefix}List",
+                $"{storageOptions.TablesPrefix}Set",
+                $"{storageOptions.TablesPrefix}Hash",
+            };
         }
 
         public void Execute(CancellationToken cancellationToken)
         {
-            foreach (var table in ProcessedTables)
+            foreach (var table in _processedTables)
             {
                 Logger.DebugFormat("Removing outdated records from table '{0}'...", table);
 
@@ -59,19 +54,19 @@ namespace Hangfire.MySql
 
                             using (
                                 new MySqlDistributedLock(
-                                    connection, 
-                                    DistributedLockKey, 
+                                    connection,
+                                    DistributedLockKey,
                                     DefaultLockTimeout,
+                                    _storageOptions,
                                     cancellationToken).Acquire())
                             {
                                 removedCount = connection.Execute(
                                     String.Format(
-                                        "select null from `{0}` where ExpireAt < @now; " +
                                         "delete from `{0}` where ExpireAt < @now limit @count;", table),
-                                    new {now = DateTime.UtcNow, count = NumberOfRecordsInSinglePass});
+                                    new { now = DateTime.UtcNow, count = NumberOfRecordsInSinglePass });
                             }
 
-                            Logger.DebugFormat("removed records count={0}",removedCount);
+                            Logger.DebugFormat("removed records count={0}", removedCount);
                         }
                         catch (MySqlException ex)
                         {
@@ -87,10 +82,10 @@ namespace Hangfire.MySql
                         cancellationToken.WaitHandle.WaitOne(DelayBetweenPasses);
                         cancellationToken.ThrowIfCancellationRequested();
                     }
-                } while (removedCount != 0);
+                } while (removedCount > 0);
             }
 
-            cancellationToken.WaitHandle.WaitOne(_checkInterval);
+            cancellationToken.WaitHandle.WaitOne(_storageOptions.JobExpirationCheckInterval);
         }
 
         public override string ToString()

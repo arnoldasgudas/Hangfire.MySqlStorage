@@ -7,7 +7,7 @@ namespace Hangfire.MySql.JobQueue
 {
     public class PersistentJobQueueProviderCollection : IEnumerable<IPersistentJobQueueProvider>
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(PersistentJobQueueProviderCollection));
 
         private readonly List<IPersistentJobQueueProvider> _providers
             = new List<IPersistentJobQueueProvider>();

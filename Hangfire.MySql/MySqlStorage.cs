@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -18,50 +17,49 @@ namespace Hangfire.MySql
 {
     public class MySqlStorage : JobStorage, IDisposable
     {
-        private static readonly ILog Logger = LogProvider.GetLogger(typeof (MySqlStorage));
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(MySqlStorage));
 
         private readonly string _connectionString;
         private readonly MySqlConnection _existingConnection;
-        private readonly MySqlStorageOptions _options;
+        private readonly MySqlStorageOptions _storageOptions;
 
         public virtual PersistentJobQueueProviderCollection QueueProviders { get; private set; }
 
-        public MySqlStorage(string nameOrConnectionString)
-            : this(nameOrConnectionString, new MySqlStorageOptions())
+        public MySqlStorage(string connectionString, MySqlStorageOptions storageOptions)
         {
-        }
+            if (connectionString == null) throw new ArgumentNullException("connectionString");
+            if (storageOptions == null) throw new ArgumentNullException("storageOptions");
 
-        public MySqlStorage(string nameOrConnectionString, MySqlStorageOptions options)
-        {
-            if (nameOrConnectionString == null) throw new ArgumentNullException("nameOrConnectionString");
-            if (options == null) throw new ArgumentNullException("options");
-
-            if (IsConnectionString(nameOrConnectionString))
+            if (IsConnectionString(connectionString))
             {
-                _connectionString = ApplyAllowUserVariablesProperty(nameOrConnectionString);
-            }
-            else if (IsConnectionStringInConfiguration(nameOrConnectionString))
-            {
-                _connectionString = 
-                    ApplyAllowUserVariablesProperty(
-                        ConfigurationManager.ConnectionStrings[nameOrConnectionString].ConnectionString);
+                _connectionString = connectionString;
             }
             else
             {
                 throw new ArgumentException(
                     string.Format(
                         "Could not find connection string with name '{0}' in application config file",
-                        nameOrConnectionString));
+                        connectionString));
             }
-            _options = options;
+            _storageOptions = storageOptions;
 
-            if (options.PrepareSchemaIfNecessary)
+            if (storageOptions.PrepareSchemaIfNecessary)
             {
                 using (var connection = CreateAndOpenConnection())
                 {
-                    MySqlObjectsInstaller.Install(connection);
+                    MySqlObjectsInstaller.Install(connection, storageOptions.TablesPrefix);
                 }
             }
+
+            InitializeQueueProviders();
+        }
+
+        public MySqlStorage(MySqlConnection existingConnection, MySqlStorageOptions storageOptions)
+        {
+            if (existingConnection == null) throw new ArgumentNullException("existingConnection");
+
+            _existingConnection = existingConnection;
+            _storageOptions = storageOptions;
 
             InitializeQueueProviders();
         }
@@ -76,33 +74,23 @@ namespace Hangfire.MySql
             return connectionString + ";Allow User Variables=True;";
         }
 
-        internal MySqlStorage(MySqlConnection existingConnection)
-        {
-            if (existingConnection == null) throw new ArgumentNullException("existingConnection");
-
-            _existingConnection = existingConnection;
-            _options = new MySqlStorageOptions();
-
-            InitializeQueueProviders();
-        }
-
         private void InitializeQueueProviders()
         {
-            QueueProviders = 
+            QueueProviders =
                 new PersistentJobQueueProviderCollection(
-                    new MySqlJobQueueProvider(this, _options));
+                    new MySqlJobQueueProvider(this, _storageOptions));
         }
 
         public override IEnumerable<IServerComponent> GetComponents()
         {
-            yield return new ExpirationManager(this, _options.JobExpirationCheckInterval);
-            yield return new CountersAggregator(this, _options.CountersAggregateInterval);
+            yield return new ExpirationManager(this, _storageOptions);
+            yield return new CountersAggregator(this, _storageOptions);
         }
 
         public override void WriteOptionsToLog(ILog logger)
         {
             logger.Info("Using the following options for SQL Server job storage:");
-            logger.InfoFormat("    Queue poll interval: {0}.", _options.QueuePollInterval);
+            logger.InfoFormat("    Queue poll interval: {0}.", _storageOptions.QueuePollInterval);
         }
 
         public override string ToString()
@@ -151,24 +139,17 @@ namespace Hangfire.MySql
 
         public override IMonitoringApi GetMonitoringApi()
         {
-            return new MySqlMonitoringApi(this, _options.DashboardJobListLimit);
+            return new MySqlMonitoringApi(this, _storageOptions);
         }
 
         public override IStorageConnection GetConnection()
         {
-            return new MySqlStorageConnection(this);
+            return new MySqlStorageConnection(this, _storageOptions);
         }
 
         private bool IsConnectionString(string nameOrConnectionString)
         {
             return nameOrConnectionString.Contains(";");
-        }
-
-        private bool IsConnectionStringInConfiguration(string connectionStringName)
-        {
-            var connectionStringSetting = ConfigurationManager.ConnectionStrings[connectionStringName];
-
-            return connectionStringSetting != null;
         }
 
         internal void UseTransaction([InstantHandle] Action<MySqlConnection> action)
@@ -183,20 +164,29 @@ namespace Hangfire.MySql
         internal T UseTransaction<T>(
             [InstantHandle] Func<MySqlConnection, T> func, IsolationLevel? isolationLevel)
         {
-            using (var transaction = CreateTransaction(isolationLevel ?? _options.TransactionIsolationLevel))
+            using (var tScope = new TransactionScope(TransactionScopeOption.Required,
+                new TransactionOptions
+                {
+                    IsolationLevel = isolationLevel ?? IsolationLevel.ReadCommitted
+                },
+                TransactionScopeAsyncFlowOption.Enabled))
             {
-                var result = UseConnection(func);
-                transaction.Complete();
 
-                return result;
+                MySqlConnection connection = null;
+
+                try
+                {
+                    connection = CreateAndOpenConnection();
+                    T result = func(connection);
+                    tScope.Complete();
+
+                    return result;
+                }
+                finally
+                {
+                    ReleaseConnection(connection);
+                }
             }
-        }
-        private TransactionScope CreateTransaction(IsolationLevel? isolationLevel)
-        {
-            return isolationLevel != null
-                ? new TransactionScope(TransactionScopeOption.Required,
-                    new TransactionOptions { IsolationLevel = isolationLevel.Value, Timeout = _options.TransactionTimeout })
-                : new TransactionScope();
         }
 
         internal void UseConnection([InstantHandle] Action<MySqlConnection> action)
@@ -232,7 +222,7 @@ namespace Hangfire.MySql
 
             var connection = new MySqlConnection(_connectionString);
             connection.Open();
-            
+
             return connection;
         }
 

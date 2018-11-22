@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Text;
+using System.Transactions;
 using Dapper;
 using Hangfire.Logging;
 using MySql.Data.MySqlClient;
@@ -10,11 +12,12 @@ namespace Hangfire.MySql
     public static class MySqlObjectsInstaller
     {
         private static readonly ILog Log = LogProvider.GetLogger(typeof(MySqlStorage));
-        public static void Install(MySqlConnection connection)
+        public static void Install(MySqlConnection connection, string tablesPrefix = null)
         {
             if (connection == null) throw new ArgumentNullException("connection");
 
-            if (TablesExists(connection))
+            var prefix = tablesPrefix ?? string.Empty;
+            if (TablesExists(connection, prefix))
             {
                 Log.Info("DB tables already exist. Exit install");
                 return;
@@ -22,22 +25,27 @@ namespace Hangfire.MySql
 
             Log.Info("Start installing Hangfire SQL objects...");
 
-            var script = GetStringResource(
-                typeof(MySqlObjectsInstaller).Assembly,
-                "Hangfire.MySql.Install.sql");
+            var script = GetStringResource("Hangfire.MySql.Install.sql");
+            var formattedScript = GetFormattedScript(script, prefix);
 
-            connection.Execute(script);
+            connection.Execute(formattedScript);
 
             Log.Info("Hangfire SQL objects installed.");
         }
 
-        private static bool TablesExists(MySqlConnection connection)
+        private static bool TablesExists(MySqlConnection connection, string tablesPrefix)
         {
-            return connection.ExecuteScalar<string>("SHOW TABLES LIKE 'Job';") != null;            
+            return connection.ExecuteScalar<string>($"SHOW TABLES LIKE '{tablesPrefix}Job';") != null;
         }
 
-        private static string GetStringResource(Assembly assembly, string resourceName)
+        private static string GetStringResource(string resourceName)
         {
+#if NET45
+            var assembly = typeof(MySqlObjectsInstaller).Assembly;
+#else
+            var assembly = typeof(MySqlObjectsInstaller).GetTypeInfo().Assembly;
+#endif
+
             using (var stream = assembly.GetManifestResourceStream(resourceName))
             {
                 if (stream == null)
@@ -53,6 +61,14 @@ namespace Hangfire.MySql
                     return reader.ReadToEnd();
                 }
             }
+        }
+
+        private static string GetFormattedScript(string script, string tablesPrefix)
+        {
+            var sb = new StringBuilder(script);
+            sb.Replace("[tablesPrefix]", tablesPrefix);
+
+            return sb.ToString();
         }
     }
 }

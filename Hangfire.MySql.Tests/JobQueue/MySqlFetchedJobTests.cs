@@ -16,20 +16,21 @@ namespace Hangfire.MySql.Tests.JobQueue
         private readonly Mock<MySqlStorage> _storage;
         private readonly int _id = 0;
         private readonly FetchedJob _fetchedJob;
+        private readonly MySqlStorageOptions _storageOptions;
 
         public MySqlFetchedJobTests()
         {
             _fetchedJob = new FetchedJob(){Id = _id, JobId = JobId, Queue = Queue};
             _connection = new Mock<IDbConnection>();
-            var options = new MySqlStorageOptions { PrepareSchemaIfNecessary = false };
-            _storage = new Mock<MySqlStorage>(ConnectionUtils.GetConnectionString(), options);
+            _storageOptions = new MySqlStorageOptions { PrepareSchemaIfNecessary = false };
+            _storage = new Mock<MySqlStorage>(ConnectionUtils.GetConnectionString(), _storageOptions);
         }
 
         [Fact]
         public void Ctor_ThrowsAnException_WhenStorageIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new MySqlFetchedJob(null, _connection.Object, _fetchedJob));
+                () => new MySqlFetchedJob(null, _connection.Object, _fetchedJob, _storageOptions));
 
             Assert.Equal("storage", exception.ParamName);
         }
@@ -38,7 +39,7 @@ namespace Hangfire.MySql.Tests.JobQueue
         public void Ctor_ThrowsAnException_WhenConnectionIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new MySqlFetchedJob(_storage.Object, null, _fetchedJob));
+                () => new MySqlFetchedJob(_storage.Object, null, _fetchedJob, _storageOptions));
 
             Assert.Equal("connection", exception.ParamName);
         }
@@ -46,7 +47,7 @@ namespace Hangfire.MySql.Tests.JobQueue
         [Fact]
         public void Ctor_CorrectlySets_AllInstanceProperties()
         {
-            var fetchedJob = new MySqlFetchedJob(_storage.Object, _connection.Object, _fetchedJob);
+            var fetchedJob = new MySqlFetchedJob(_storage.Object, _connection.Object, _fetchedJob, _storageOptions);
 
             Assert.Equal(JobId.ToString(), fetchedJob.JobId);
             Assert.Equal(Queue, fetchedJob.Queue);
@@ -55,7 +56,7 @@ namespace Hangfire.MySql.Tests.JobQueue
         private MySqlFetchedJob CreateFetchedJob(int jobId, string queue)
         {
             return new MySqlFetchedJob(_storage.Object, _connection.Object,
-                new FetchedJob() {JobId = jobId, Queue = queue, Id = _id});
+                new FetchedJob() {JobId = jobId, Queue = queue, Id = _id}, _storageOptions);
         }
     }
 }

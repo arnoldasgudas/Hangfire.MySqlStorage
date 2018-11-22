@@ -13,7 +13,7 @@ namespace Hangfire.MySql.JobQueue
             if (options == null) throw new ArgumentNullException("options");
 
             _jobQueue = new MySqlJobQueue(storage, options);
-            _monitoringApi = new MySqlJobQueueMonitoringApi(storage);
+            _monitoringApi = new MySqlJobQueueMonitoringApi(storage, options);
         }
 
         public IPersistentJobQueue GetJobQueue()

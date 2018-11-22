@@ -9,10 +9,11 @@ namespace Hangfire.MySql.JobQueue
 {
     internal class MySqlFetchedJob : IFetchedJob
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(MySqlFetchedJob));
 
         private readonly MySqlStorage _storage;
         private readonly IDbConnection _connection;
+        private readonly MySqlStorageOptions _storageOptions;
         private readonly int _id;
         private bool _removedFromQueue;
         private bool _requeued;
@@ -21,7 +22,8 @@ namespace Hangfire.MySql.JobQueue
         public MySqlFetchedJob(
             MySqlStorage storage, 
             IDbConnection connection,
-            FetchedJob fetchedJob)
+            FetchedJob fetchedJob,
+            MySqlStorageOptions storageOptions)
         {
             if (storage == null) throw new ArgumentNullException("storage");
             if (connection == null) throw new ArgumentNullException("connection");
@@ -29,6 +31,7 @@ namespace Hangfire.MySql.JobQueue
 
             _storage = storage;
             _connection = connection;
+            _storageOptions = storageOptions;
             _id = fetchedJob.Id;
             JobId = fetchedJob.JobId.ToString(CultureInfo.InvariantCulture);
             Queue = fetchedJob.Queue; 
@@ -55,7 +58,7 @@ namespace Hangfire.MySql.JobQueue
 
             //todo: unit test
             _connection.Execute(
-                "delete from JobQueue " +
+                $"delete from `{_storageOptions.TablesPrefix}JobQueue` " +
                 "where Id = @id",
                 new
                 {
@@ -71,7 +74,7 @@ namespace Hangfire.MySql.JobQueue
 
             //todo: unit test
             _connection.Execute(
-                "update JobQueue set FetchedAt = null " +
+                $"update `{_storageOptions.TablesPrefix}JobQueue` set FetchedAt = null " +
                 "where Id = @id",
                 new
                 {

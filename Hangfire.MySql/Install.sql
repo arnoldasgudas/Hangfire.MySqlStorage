@@ -1,7 +1,7 @@
 ﻿-- ----------------------------
 -- Table structure for `Job`
 -- ----------------------------
-CREATE TABLE `Job` (
+CREATE TABLE `[tablesPrefix]Job` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `StateId` int(11) DEFAULT NULL,
   `StateName` nvarchar(20) DEFAULT NULL,
@@ -10,37 +10,37 @@ CREATE TABLE `Job` (
   `CreatedAt` datetime(6) NOT NULL,
   `ExpireAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  KEY `IX_Job_StateName` (`StateName`)
+  KEY `IX_[tablesPrefix]Job_StateName` (`StateName`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 
 -- ----------------------------
 -- Table structure for `Counter`
 -- ----------------------------
-CREATE TABLE `Counter` (
+CREATE TABLE `[tablesPrefix]Counter` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `Key` nvarchar(100) NOT NULL,
   `Value` int(11) NOT NULL,
   `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  KEY `IX_Counter_Key` (`Key`)
+  KEY `IX_[tablesPrefix]Counter_Key` (`Key`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 
-CREATE TABLE `AggregatedCounter` (
+CREATE TABLE `[tablesPrefix]AggregatedCounter` (
 	Id int(11) NOT NULL AUTO_INCREMENT,
   `Key` nvarchar(100) NOT NULL,
 	`Value` int(11) NOT NULL,
 	ExpireAt datetime DEFAULT NULL,
 	PRIMARY KEY (`Id`),
-	UNIQUE KEY `IX_CounterAggregated_Key` (`Key`)
+	UNIQUE KEY `IX_[tablesPrefix]CounterAggregated_Key` (`Key`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 
 -- ----------------------------
 -- Table structure for `DistributedLock`
 -- ----------------------------
-CREATE TABLE `DistributedLock` (
+CREATE TABLE `[tablesPrefix]DistributedLock` (
   `Resource` nvarchar(100) NOT NULL,
   `CreatedAt` datetime(6) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
@@ -49,48 +49,48 @@ CREATE TABLE `DistributedLock` (
 -- ----------------------------
 -- Table structure for `Hash`
 -- ----------------------------
-CREATE TABLE `Hash` (
+CREATE TABLE `[tablesPrefix]Hash` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `Key` nvarchar(100) NOT NULL,
   `Field` nvarchar(40) NOT NULL,
   `Value` longtext,
   `ExpireAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_Hash_Key_Field` (`Key`,`Field`)
+  UNIQUE KEY `IX_[tablesPrefix]Hash_Key_Field` (`Key`,`Field`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 
 -- ----------------------------
 -- Table structure for `JobParameter`
 -- ----------------------------
-CREATE TABLE `JobParameter` (
+CREATE TABLE `[tablesPrefix]JobParameter` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `JobId` int(11) NOT NULL,
   `Name` nvarchar(40) NOT NULL,
   `Value` longtext,
   PRIMARY KEY (`Id`),
-  CONSTRAINT `IX_JobParameter_JobId_Name` UNIQUE (`JobId`,`Name`),
-  KEY `FK_JobParameter_Job` (`JobId`),
-  CONSTRAINT `FK_JobParameter_Job` FOREIGN KEY (`JobId`) REFERENCES `Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `IX_[tablesPrefix]JobParameter_JobId_Name` UNIQUE (`JobId`,`Name`),
+  KEY `FK_[tablesPrefix]JobParameter_Job` (`JobId`),
+  CONSTRAINT `FK_[tablesPrefix]JobParameter_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 -- ----------------------------
 -- Table structure for `JobQueue`
 -- ----------------------------
-CREATE TABLE `JobQueue` (
+CREATE TABLE `[tablesPrefix]JobQueue` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `JobId` int(11) NOT NULL,
   `FetchedAt` datetime(6) DEFAULT NULL,
   `Queue` nvarchar(50) NOT NULL,
   `FetchToken` nvarchar(36) DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  INDEX `IX_JobQueue_QueueAndFetchedAt` (`Queue`,`FetchedAt`)
+  INDEX `IX_[tablesPrefix]JobQueue_QueueAndFetchedAt` (`Queue`,`FetchedAt`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 -- ----------------------------
 -- Table structure for `JobState`
 -- ----------------------------
-CREATE TABLE `JobState` (
+CREATE TABLE `[tablesPrefix]JobState` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `JobId` int(11) NOT NULL,
   `CreatedAt` datetime(6) NOT NULL,
@@ -98,14 +98,14 @@ CREATE TABLE `JobState` (
   `Reason` nvarchar(100) DEFAULT NULL,
   `Data` longtext,
   PRIMARY KEY (`Id`),
-  KEY `FK_JobState_Job` (`JobId`),
-  CONSTRAINT `FK_JobState_Job` FOREIGN KEY (`JobId`) REFERENCES `Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `FK_[tablesPrefix]JobState_Job` (`JobId`),
+  CONSTRAINT `FK_[tablesPrefix]JobState_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 -- ----------------------------
 -- Table structure for `Server`
 -- ----------------------------
-CREATE TABLE `Server` (
+CREATE TABLE `[tablesPrefix]Server` (
   `Id` nvarchar(100) NOT NULL,
   `Data` longtext NOT NULL,
   `LastHeartbeat` datetime(6) DEFAULT NULL,
@@ -116,17 +116,17 @@ CREATE TABLE `Server` (
 -- ----------------------------
 -- Table structure for `Set`
 -- ----------------------------
-CREATE TABLE `Set` (
+CREATE TABLE `[tablesPrefix]Set` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `Key` nvarchar(100) NOT NULL,
   `Value` nvarchar(256) NOT NULL,
   `Score` float NOT NULL,
   `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_Set_Key_Value` (`Key`,`Value`)
+  UNIQUE KEY `IX_[tablesPrefix]Set_Key_Value` (`Key`,`Value`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
-CREATE TABLE `State`
+CREATE TABLE `[tablesPrefix]State`
 (
 	Id int(11) NOT NULL AUTO_INCREMENT,
 	JobId int(11) NOT NULL,
@@ -135,11 +135,11 @@ CREATE TABLE `State`
 	CreatedAt datetime(6) NOT NULL,
 	Data longtext NULL,
 	PRIMARY KEY (`Id`),
-	KEY `FK_HangFire_State_Job` (`JobId`),
-	CONSTRAINT `FK_HangFire_State_Job` FOREIGN KEY (`JobId`) REFERENCES `Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
+	KEY `FK_[tablesPrefix]HangFire_State_Job` (`JobId`),
+	CONSTRAINT `FK_[tablesPrefix]HangFire_State_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
-CREATE TABLE `List`
+CREATE TABLE `[tablesPrefix]List`
 (
 	`Id` int(11) NOT NULL AUTO_INCREMENT,
   `Key` nvarchar(100) NOT NULL,
