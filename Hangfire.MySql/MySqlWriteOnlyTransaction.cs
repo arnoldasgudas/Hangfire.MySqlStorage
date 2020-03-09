@@ -245,7 +245,7 @@ namespace Hangfire.MySql
                 $@"
 delete lst
 from `{_storageOptions.TablesPrefix}List` lst
-	inner join (SELECT tmp.Id, @rownum := @rownum + 1 AS rank
+	inner join (SELECT tmp.Id, @rownum := @rownum + 1 AS 'rank'
 		  		FROM `{_storageOptions.TablesPrefix}List` tmp, 
        				(SELECT @rownum := 0) r ) ranked on ranked.Id = lst.Id
 where lst.Key = @key
