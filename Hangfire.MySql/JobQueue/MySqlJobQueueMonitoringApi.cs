@@ -46,7 +46,7 @@ namespace Hangfire.MySql.JobQueue
             string sqlQuery = $@"
 SET @rank=0;
 select r.JobId from (
-  select jq.JobId, @rank := @rank+1 AS rank 
+  select jq.JobId, @rank := @rank+1 AS 'rank' 
   from `{_storageOptions.TablesPrefix}JobQueue` jq
   where jq.Queue = @queue
   order by jq.Id

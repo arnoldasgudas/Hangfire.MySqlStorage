@@ -354,7 +354,7 @@ select sum(s.`Value`) from (
         {
             string jobsSql =
 $@"select * from (
-  select j.*, s.Reason as StateReason, s.Data as StateData, @rownum := @rownum + 1 AS rank
+  select j.*, s.Reason as StateReason, s.Data as StateData, @rownum := @rownum + 1 AS 'rank'
   from `{_storageOptions.TablesPrefix}Job` j
     cross join (SELECT @rownum := 0) r
   left join `{_storageOptions.TablesPrefix}State` s on j.StateId = s.Id
