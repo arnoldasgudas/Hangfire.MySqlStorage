@@ -75,7 +75,7 @@ namespace Hangfire.MySql.JobQueue
                 }
                 catch (MySqlException ex)
                 {
-                    Logger.ErrorException(ex.Message, ex);
+                    //Logger.ErrorException(ex.Message, ex);
                     _storage.ReleaseConnection(connection);
                     throw;
                 }
