@@ -3,7 +3,7 @@ using System.Linq;
 using System.Transactions;
 using Dapper;
 using Hangfire.MySql.JobQueue;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Xunit;
 
 namespace Hangfire.MySql.Tests.JobQueue

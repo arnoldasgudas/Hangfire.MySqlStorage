@@ -10,7 +10,7 @@ using Hangfire.MySql.JobQueue;
 using Hangfire.MySql.Monitoring;
 using Hangfire.Server;
 using Hangfire.Storage;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using IsolationLevel = System.Transactions.IsolationLevel;
 
 namespace Hangfire.MySql
