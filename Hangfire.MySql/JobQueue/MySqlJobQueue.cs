@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Data;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using Dapper;
-using Hangfire.Annotations;
 using Hangfire.Logging;
 using Hangfire.Storage;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 
 namespace Hangfire.MySql.JobQueue
 {

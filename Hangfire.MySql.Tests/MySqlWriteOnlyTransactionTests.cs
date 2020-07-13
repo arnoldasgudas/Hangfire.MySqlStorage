@@ -6,7 +6,7 @@ using Dapper;
 using Hangfire.MySql.JobQueue;
 using Hangfire.States;
 using Moq;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Xunit;
 
 namespace Hangfire.MySql.Tests

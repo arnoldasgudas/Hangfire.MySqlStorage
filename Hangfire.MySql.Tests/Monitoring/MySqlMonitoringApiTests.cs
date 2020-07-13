@@ -6,7 +6,7 @@ using Hangfire.MySql.JobQueue;
 using Hangfire.MySql.Monitoring;
 using Hangfire.Storage.Monitoring;
 using Moq;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Xunit;
 
 namespace Hangfire.MySql.Tests.Monitoring

@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Threading;
 using Dapper;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Xunit;
 
 namespace Hangfire.MySql.Tests

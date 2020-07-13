@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Dapper;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 
 namespace Hangfire.MySql.Tests
 {
