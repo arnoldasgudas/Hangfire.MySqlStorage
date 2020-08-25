@@ -42,7 +42,9 @@ CREATE TABLE `[tablesPrefix]AggregatedCounter` (
 -- ----------------------------
 CREATE TABLE `[tablesPrefix]DistributedLock` (
   `Resource` nvarchar(100) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL
+  `CreatedAt` datetime(6) NOT NULL,
+   id int(11) NOT NULL AUTO_Increment,
+   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 
