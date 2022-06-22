@@ -20,7 +20,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.CSharp" Version="4.4.1" />
         <PackageReference Include="MySqlConnector" Version="1.0.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
         <PackageReference Include="Dapper" Version="1.50.5" />
         <PackageReference Include="Hangfire.Core" Version="1.6.21" />
     </ItemGroup>
