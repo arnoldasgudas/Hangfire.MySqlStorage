@@ -120,7 +120,7 @@ CREATE TABLE `[tablesPrefix]Set` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `Key` nvarchar(100) NOT NULL,
   `Value` nvarchar(256) NOT NULL,
-  `Score` float NOT NULL,
+  `Score` double NOT NULL,
   `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `IX_[tablesPrefix]Set_Key_Value` (`Key`,`Value`)
