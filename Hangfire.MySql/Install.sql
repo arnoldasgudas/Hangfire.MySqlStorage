@@ -41,8 +41,10 @@ CREATE TABLE `[tablesPrefix]AggregatedCounter` (
 -- Table structure for `DistributedLock`
 -- ----------------------------
 CREATE TABLE `[tablesPrefix]DistributedLock` (
+   Id int(11) NOT NULL AUTO_INCREMENT,
   `Resource` nvarchar(100) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL
+  `CreatedAt` datetime(6) NOT NULL,
+   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 
