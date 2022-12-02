@@ -155,13 +155,33 @@ namespace Hangfire.MySql
         public override void AddToSet(string key, string value, double score)
         {
             Logger.TraceFormat("AddToSet key={0} value={1}", key, value);
-
+        
             AcquireSetLock();
-            QueueCommand(x => x.Execute(
-                $"INSERT INTO `{_storageOptions.TablesPrefix}Set` (`Key`, `Value`, `Score`) " +
-                "VALUES (@Key, @Value, @Score) " +
-                "ON DUPLICATE KEY UPDATE `Score` = @Score",
-                new { key, value, score }));
+            QueueCommand(x =>
+            {
+                if (key == "recurring-jobs")
+                {
+                    var updatesql = $"UPDATE `{_storageOptions.TablesPrefix}Set` set `Score` = @score where `Key` = @key and `Value` = @value";
+                    var updateRt = x.Execute(updatesql, new { score = score, key = key, value = value });
+                    if (updateRt < 1)
+                    {
+                        var insertsql = $"INSERT INTO `{_storageOptions.TablesPrefix}Set` (`Key`, `Value`, `Score`) " +
+                              "VALUES (@Key, @Value, @Score) ";
+                        x.Execute(
+                            insertsql,
+                            new { key, value, score });
+                    }
+                }
+                else
+                {
+                   var sql = $"INSERT INTO `{_storageOptions.TablesPrefix}Set` (`Key`, `Value`, `Score`) " +
+                          "VALUES (@Key, @Value, @Score) " +
+                          "ON DUPLICATE KEY UPDATE `Score` = @Score";
+                   x.Execute(
+                       sql,
+                       new { key, value, score });
+                }
+            });
         }
 
         public override void AddRangeToSet(string key, IList<string> items)
