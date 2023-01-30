@@ -66,7 +66,7 @@ namespace Hangfire.MySql.Monitoring
 
                 foreach (var server in servers)
                 {
-                    var data = JobHelper.FromJson<ServerData>(server.Data);
+                    var data = SerializationHelper.Deserialize<ServerData>(server.Data);
                     result.Add(new ServerDto
                     {
                         Name = server.Id,
@@ -106,7 +106,7 @@ select * from `{_storageOptions.TablesPrefix}State` where JobId = @id order by I
                                 CreatedAt = x.CreatedAt,
                                 Reason = x.Reason,
                                 Data = new Dictionary<string, string>(
-                                    JobHelper.FromJson<Dictionary<string, string>>(x.Data),
+                                    SerializationHelper.Deserialize<Dictionary<string, string>>(x.Data),
                                     StringComparer.OrdinalIgnoreCase),
                             })
                             .ToList();
@@ -379,7 +379,7 @@ $@"select * from (
 
             foreach (var job in jobs)
             {
-                var deserializedData = JobHelper.FromJson<Dictionary<string, string>>(job.StateData);
+                var deserializedData = SerializationHelper.Deserialize<Dictionary<string, string>>(job.StateData);
                 var stateData = deserializedData != null
                     ? new Dictionary<string, string>(deserializedData, StringComparer.OrdinalIgnoreCase)
                     : null;
@@ -395,12 +395,12 @@ $@"select * from (
 
         private static Job DeserializeJob(string invocationData, string arguments)
         {
-            var data = JobHelper.FromJson<InvocationData>(invocationData);
+            var data = SerializationHelper.Deserialize<InvocationData>(invocationData);
             data.Arguments = arguments;
 
             try
             {
-                return data.Deserialize();
+                return data.DeserializeJob();
             }
             catch (JobLoadException)
             {
