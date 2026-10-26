@@ -1,6 +1,17 @@
 # Hangfire MySql Storage Implementation
 [![NuGet version](https://badge.fury.io/nu/Hangfire.MySqlStorage.svg)](https://www.nuget.org/packages/Hangfire.MySqlStorage)
 
+> [!IMPORTANT]
+> **Maintenance status: not actively maintained**
+>
+> This library is no longer actively developed. The latest release, [2.0.3](https://www.nuget.org/packages/Hangfire.MySqlStorage/2.0.3), is stable and is still downloaded about 1,400 times a day, but new issues and pull requests are not being reviewed right now.
+>
+> **If you use it:** pin to version 2.0.3 and test before upgrading Hangfire or MySQL. You're welcome to fork the project under its LGPL-3.0 licence.
+>
+> **Looking for co-maintainers.** If you rely on this package and would like to help review pull requests and publish releases, please open an issue titled "Co-maintainer" with a short note about your experience with Hangfire and MySQL.
+>
+> Thank you to everyone who has used, tested and contributed to this project over 5.5 million downloads.
+
 MySql storage implementation of [Hangfire](http://hangfire.io/) - fire-and-forget, delayed and recurring tasks runner for .NET. Scalable and reliable background job runner. Supports multiple servers, CPU and I/O intensive, long-running and short-running jobs.
 
 **Some features of MySql storage implementation is under development!**
