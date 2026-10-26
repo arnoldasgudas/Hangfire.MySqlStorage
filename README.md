@@ -14,7 +14,6 @@
 
 MySql storage implementation of [Hangfire](http://hangfire.io/) - fire-and-forget, delayed and recurring tasks runner for .NET. Scalable and reliable background job runner. Supports multiple servers, CPU and I/O intensive, long-running and short-running jobs.
 
-**Some features of MySql storage implementation is under development!**
 
 ## Installation
 Install MySQL
