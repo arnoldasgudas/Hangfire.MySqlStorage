@@ -78,13 +78,37 @@ Hangfire provides a dashboard
 More info: [Hangfire Overview](http://hangfire.io/overview.html#integrated-monitoring-ui)
 
 ## Build
-Please use Visual Studio or any other tool of your choice to build the solution
+Please use Visual Studio or any other tool of your choice to build the solution, or from the command line (requires the [.NET SDK](https://dotnet.microsoft.com/download)):
+
+```
+dotnet build Hangfire.MySqlStorage.sln
+```
 
 ## Test
-In order to run unit tests and integrational tests set the following variables in you system environment variables (restart of Visual Studio is required):
+The tests include integration tests, so a MySQL server must be running and reachable before you start. By default the tests connect to `127.0.0.1:3306` as `root` / `root`. The test database is created automatically if it does not exist and is dropped again afterwards, so use a throwaway server rather than one holding data you care about.
+
+To use different settings, set the following variables in your system environment variables (restart of Visual Studio is required):
 
 `Hangfire_SqlServer_ConnectionStringTemplate` (default: `server=127.0.0.1;uid=root;pwd=root;database={0};Allow User Variables=True`)
 
 `Hangfire_SqlServer_DatabaseName` (default: `Hangfire.MySql.Tests`)
+
+### Running the tests from the command line
+
+```
+dotnet test Hangfire.MySql.Tests
+```
+
+The test project targets `netcoreapp2.0`. If you only have a newer .NET runtime installed, let it roll forward:
+
+```
+DOTNET_ROLL_FORWARD=Major dotnet test Hangfire.MySql.Tests
+```
+
+On Apple Silicon Macs there is no arm64 build of the .NET Core 2.0 runtime, so also pass `--arch arm64`, otherwise the test host looks for an x64 `dotnet`:
+
+```
+DOTNET_ROLL_FORWARD=Major dotnet test Hangfire.MySql.Tests --arch arm64
+```
 
 
