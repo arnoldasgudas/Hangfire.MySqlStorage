@@ -1,4 +1,6 @@
-﻿-- New installs use utf8mb4 / utf8mb4_general_ci.
+﻿-- New installs use utf8mb4 / utf8mb4_unicode_520_ci.
+-- utf8mb4_general_ci compares every non-BMP character as equal, so distinct
+-- emoji collapse on the Set unique key (AddToSet uses ON DUPLICATE KEY UPDATE).
 -- MySQL NVARCHAR is VARCHAR CHARACTER SET utf8mb3, so string columns are VARCHAR
 -- and inherit the table charset. Otherwise emoji still fails on those columns.
 -- Set.Score is DOUBLE (64-bit). MySQL FLOAT is 32-bit and drops timestamp precision.
@@ -17,7 +19,7 @@ CREATE TABLE `[tablesPrefix]Job` (
   `ExpireAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   KEY `IX_[tablesPrefix]Job_StateName` (`StateName`)
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 
 -- ----------------------------
@@ -30,7 +32,7 @@ CREATE TABLE `[tablesPrefix]Counter` (
   `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
   KEY `IX_[tablesPrefix]Counter_Key` (`Key`)
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 
 CREATE TABLE `[tablesPrefix]AggregatedCounter` (
@@ -40,7 +42,7 @@ CREATE TABLE `[tablesPrefix]AggregatedCounter` (
 	ExpireAt datetime DEFAULT NULL,
 	PRIMARY KEY (`Id`),
 	UNIQUE KEY `IX_[tablesPrefix]CounterAggregated_Key` (`Key`)
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 
 -- ----------------------------
@@ -49,7 +51,7 @@ CREATE TABLE `[tablesPrefix]AggregatedCounter` (
 CREATE TABLE `[tablesPrefix]DistributedLock` (
   `Resource` varchar(100) NOT NULL,
   `CreatedAt` datetime(6) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 
 -- ----------------------------
@@ -63,7 +65,7 @@ CREATE TABLE `[tablesPrefix]Hash` (
   `ExpireAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `IX_[tablesPrefix]Hash_Key_Field` (`Key`,`Field`)
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 
 -- ----------------------------
@@ -78,7 +80,7 @@ CREATE TABLE `[tablesPrefix]JobParameter` (
   CONSTRAINT `IX_[tablesPrefix]JobParameter_JobId_Name` UNIQUE (`JobId`,`Name`),
   KEY `FK_[tablesPrefix]JobParameter_Job` (`JobId`),
   CONSTRAINT `FK_[tablesPrefix]JobParameter_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 -- ----------------------------
 -- Table structure for `JobQueue`
@@ -91,7 +93,7 @@ CREATE TABLE `[tablesPrefix]JobQueue` (
   `FetchToken` varchar(36) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   INDEX `IX_[tablesPrefix]JobQueue_QueueAndFetchedAt` (`Queue`,`FetchedAt`)
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 -- ----------------------------
 -- Table structure for `JobState`
@@ -106,7 +108,7 @@ CREATE TABLE `[tablesPrefix]JobState` (
   PRIMARY KEY (`Id`),
   KEY `FK_[tablesPrefix]JobState_Job` (`JobId`),
   CONSTRAINT `FK_[tablesPrefix]JobState_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 -- ----------------------------
 -- Table structure for `Server`
@@ -116,7 +118,7 @@ CREATE TABLE `[tablesPrefix]Server` (
   `Data` longtext NOT NULL,
   `LastHeartbeat` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 
 -- ----------------------------
@@ -130,7 +132,7 @@ CREATE TABLE `[tablesPrefix]Set` (
   `ExpireAt` datetime DEFAULT NULL,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `IX_[tablesPrefix]Set_Key_Value` (`Key`,`Value`)
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 CREATE TABLE `[tablesPrefix]State`
 (
@@ -143,7 +145,7 @@ CREATE TABLE `[tablesPrefix]State`
 	PRIMARY KEY (`Id`),
 	KEY `FK_[tablesPrefix]HangFire_State_Job` (`JobId`),
 	CONSTRAINT `FK_[tablesPrefix]HangFire_State_Job` FOREIGN KEY (`JobId`) REFERENCES `[tablesPrefix]Job` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 
 CREATE TABLE `[tablesPrefix]List`
 (
@@ -152,4 +154,4 @@ CREATE TABLE `[tablesPrefix]List`
 	`Value` longtext NULL,
 	`ExpireAt` datetime(6) NULL,
 	PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
