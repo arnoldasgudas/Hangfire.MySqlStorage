@@ -361,6 +361,41 @@ select last_insert_id() as Id";
         }
 
         [Fact, CleanDatabase]
+        public void AddToSet_StoresDistinctEmojiAsSeparateValues()
+        {
+            UseConnection(sql =>
+            {
+                Commit(sql, x =>
+                {
+                    x.AddToSet("my-key", "😀", 1.0);
+                    x.AddToSet("my-key", "😁", 2.0);
+                });
+
+                var values = sql.Query<string>("select `Value` from `Set`").ToList();
+
+                Assert.Equal(2, values.Count);
+                Assert.Contains("😀", values);
+                Assert.Contains("😁", values);
+            });
+        }
+
+        [Fact, CleanDatabase]
+        public void AddToSet_WithScore_PersistsScoreExactly()
+        {
+            // 2021-01-01T00:00:00.5Z. Exact in IEEE-754 double; MySQL FLOAT rounds it (ulp 128 near 1.6e9).
+            const double score = 1609459200.5d;
+
+            UseConnection(sql =>
+            {
+                Commit(sql, x => x.AddToSet("schedule", "job-id", score));
+
+                var stored = sql.Query<double>("select `Score` from `Set`").Single();
+
+                Assert.Equal(score, stored);
+            });
+        }
+
+        [Fact, CleanDatabase]
         public void RemoveFromSet_RemovesARecord_WithGivenKeyAndValue()
         {
             UseConnection(sql =>

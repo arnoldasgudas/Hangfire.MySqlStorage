@@ -111,4 +111,31 @@ On Apple Silicon Macs there is no arm64 build of the .NET Core 2.0 runtime, so a
 DOTNET_ROLL_FORWARD=Major dotnet test Hangfire.MySql.Tests --arch arm64
 ```
 
+## Existing databases
+
+`PrepareSchemaIfNecessary` creates missing tables only. It does not change a database that already has the `Job` table.
+
+New installs use `utf8mb4` / `utf8mb4_unicode_520_ci` and store `Set.Score` as `double` (64-bit). MySQL `utf8` is `utf8mb3` and cannot store emoji: a strict `sql_mode` rejects the insert, while a non-strict one silently stores `?` instead (migrating cannot recover data already replaced). `utf8mb4_general_ci` stores emoji but treats every non-BMP character as equal, so `AddToSet` (`ON DUPLICATE KEY UPDATE`) overwrites values that differ only by emoji. `utf8mb4_unicode_520_ci` keeps different emoji distinct and stays case- and accent-insensitive. It does ignore some invisible characters, so values that differ only by a zero-width joiner (U+200D) or a variation selector such as U+FE0F (for example `❤` and `❤️`) compare equal, as do `ß` and `ss`. Avoid keys, set values and ids that differ only that way. MySQL `FLOAT` is 32-bit, so delayed and recurring scores lose precision. String columns are `VARCHAR` so they inherit `utf8mb4`. MySQL `NVARCHAR` is fixed to `utf8mb3`. C# already reads and writes scores as `double`.
+
+Back up the database before migrating. These `ALTER TABLE` statements rebuild each table and block writes until the rebuild finishes, so run them during downtime. The statements are not transactional: if one fails (for example with `Duplicate entry` on `Set` or `Hash` when values that were distinct under `utf8_general_ci` become equal under the new collation, such as `Straße` and `Strasse`), the tables converted before it stay converted. Fix the data and run the whole block again; running it twice is safe.
+
+To upgrade an older schema, run this once. If `TablesPrefix` is set, prefix each table name (for example `HangfireJob`). Widening `Score` keeps stored values but cannot restore precision already lost. The `Set` unique key is 1424 bytes, so the tables need the `DYNAMIC` row format, which is the default on MySQL 5.7 and later. The previous schema already needed it. On MySQL 5.6 that means `innodb_large_prefix=ON`, `innodb_file_format=Barracuda` and adding `ROW_FORMAT=DYNAMIC` to the tables yourself, because `Install.sql` does not set a row format.
+
+```sql
+SET FOREIGN_KEY_CHECKS = 0;
+ALTER TABLE `Job` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `Counter` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `AggregatedCounter` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `DistributedLock` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `Hash` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `JobParameter` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `JobQueue` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `JobState` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `Server` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `Set` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci, MODIFY `Score` double NOT NULL;
+ALTER TABLE `State` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+ALTER TABLE `List` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+SET FOREIGN_KEY_CHECKS = 1;
+```
+
 

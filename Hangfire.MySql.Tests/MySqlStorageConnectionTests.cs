@@ -161,6 +161,30 @@ namespace Hangfire.MySql.Tests
         }
 
         [Fact, CleanDatabase]
+        public void CreateExpiredJob_RoundTripsEmojiInArgumentsAndParameters()
+        {
+            UseConnections((sql, connection) =>
+            {
+                var createdAt = new DateTime(2012, 12, 12);
+                var jobId = connection.CreateExpiredJob(
+                    Job.FromExpression(() => SampleMethod("Hello 😀")),
+                    new Dictionary<string, string> { { "Note", "😁" } },
+                    createdAt,
+                    TimeSpan.FromDays(1));
+
+                var result = connection.GetJobData(jobId);
+
+                Assert.NotNull(result);
+                Assert.Null(result.LoadException);
+                Assert.Equal("Hello 😀", result.Job.Args[0]);
+                Assert.Equal("😁", connection.GetJobParameter(jobId, "Note"));
+
+                var arguments = sql.Query<string>("select Arguments from Job").Single();
+                Assert.Contains("😀", arguments);
+            });
+        }
+
+        [Fact, CleanDatabase]
         public void GetJobData_ThrowsAnException_WhenJobIdIsNull()
         {
             UseConnection(connection => Assert.Throws<ArgumentNullException>(
