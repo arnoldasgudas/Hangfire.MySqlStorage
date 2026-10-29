@@ -1,6 +1,9 @@
 ﻿-- New installs use utf8mb4 / utf8mb4_unicode_520_ci.
 -- utf8mb4_general_ci compares every non-BMP character as equal, so distinct
 -- emoji collapse on the Set unique key (AddToSet uses ON DUPLICATE KEY UPDATE).
+-- utf8mb4_unicode_520_ci keeps different emoji apart, but it ignores some invisible
+-- characters: values that differ only by U+200D (zero-width joiner) or a variation
+-- selector such as U+FE0F compare equal, as do U+00DF (sharp s) and "ss".
 -- MySQL NVARCHAR is VARCHAR CHARACTER SET utf8mb3, so string columns are VARCHAR
 -- and inherit the table charset. Otherwise emoji still fails on those columns.
 -- Set.Score is DOUBLE (64-bit). MySQL FLOAT is 32-bit and drops timestamp precision.
