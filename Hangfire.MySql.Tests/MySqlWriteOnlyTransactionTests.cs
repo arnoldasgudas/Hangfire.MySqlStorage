@@ -380,6 +380,46 @@ select last_insert_id() as Id";
         }
 
         [Fact, CleanDatabase]
+        public void AddToSet_KeepsValuesThatUnicode520CollationWouldFold()
+        {
+            UseConnection(sql =>
+            {
+                Commit(sql, x =>
+                {
+                    x.AddToSet("my-key", "❤", 1.0);
+                    x.AddToSet("my-key", "❤️", 2.0);
+                    x.AddToSet("my-key", "a", 3.0);
+                    x.AddToSet("my-key", "a‍", 4.0);
+                    x.AddToSet("my-key", "ß", 5.0);
+                    x.AddToSet("my-key", "ss", 6.0);
+                });
+
+                var values = sql.Query<string>("select `Value` from `Set` order by `Score`").ToList();
+
+                Assert.Equal(
+                    new[] { "❤", "❤️", "a", "a‍", "ß", "ss" },
+                    values);
+            });
+        }
+
+        [Fact, CleanDatabase]
+        public void AddToSet_TreatsKeyAndValueCaseAsDistinct()
+        {
+            UseConnection(sql =>
+            {
+                Commit(sql, x =>
+                {
+                    x.AddToSet("Key", "Value", 1.0);
+                    x.AddToSet("key", "value", 2.0);
+                });
+
+                var count = sql.Query<int>("select count(*) from `Set`").Single();
+
+                Assert.Equal(2, count);
+            });
+        }
+
+        [Fact, CleanDatabase]
         public void AddToSet_WithScore_PersistsScoreExactly()
         {
             // 2021-01-01T00:00:00.5Z. Exact in IEEE-754 double; MySQL FLOAT rounds it (ulp 128 near 1.6e9).
@@ -509,6 +549,24 @@ select last_insert_id() as Id";
                 var recordCount = sql.Query<int>("select count(*) from List").Single();
 
                 Assert.Equal(1, recordCount);
+            });
+        }
+
+        [Fact, CleanDatabase]
+        public void RemoveFromList_KeepsValuesThatDifferByVariationSelector()
+        {
+            UseConnection(sql =>
+            {
+                Commit(sql, x =>
+                {
+                    x.InsertToList("my-key", "❤");
+                    x.InsertToList("my-key", "❤️");
+                    x.RemoveFromList("my-key", "❤");
+                });
+
+                var values = sql.Query<string>("select `Value` from List").ToList();
+
+                Assert.Equal(new[] { "❤️" }, values);
             });
         }
 
@@ -663,6 +721,31 @@ select last_insert_id() as Id";
 
                 Assert.Equal("Value1", result["Key1"]);
                 Assert.Equal("Value2", result["Key2"]);
+            });
+        }
+
+        [Fact, CleanDatabase]
+        public void SetRangeInHash_KeepsFieldsThatDifferByVariationSelector()
+        {
+            UseConnection(sql =>
+            {
+                Commit(sql, x =>
+                {
+                    x.SetRangeInHash("hash", new Dictionary<string, string>
+                    {
+                        { "❤", "plain" }
+                    });
+                    x.SetRangeInHash("hash", new Dictionary<string, string>
+                    {
+                        { "❤️", "emoji" }
+                    });
+                });
+
+                var result = sql.Query("select Field, Value from Hash")
+                    .ToDictionary(r => (string)r.Field, r => (string)r.Value);
+
+                Assert.Equal("plain", result["❤"]);
+                Assert.Equal("emoji", result["❤️"]);
             });
         }
 
