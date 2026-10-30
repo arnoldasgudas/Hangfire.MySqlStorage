@@ -113,7 +113,7 @@ DOTNET_ROLL_FORWARD=Major dotnet test Hangfire.MySql.Tests --arch arm64
 
 ## Existing databases
 
-`PrepareSchemaIfNecessary` creates missing tables only. It does not change a database that already has the `Job` table.
+`PrepareSchemaIfNecessary` creates missing tables only. It does not `ALTER` a database that already has the `Job` table. On that path it reads the `{prefix}Schema` version marker (table prefix included, so `TablesPrefix = "Hangfire"` uses `HangfireSchema`) and checks `information_schema`. If a Hangfire table is still `utf8`/`utf8mb3`, or `{prefix}Set.Score` is still `float`, it logs a warning and leaves the data unchanged, including when a version row is already present. When the existing tables already match the current schema but the marker is missing, it records the current version in `{prefix}Schema`. Later startups that already have that version, and that are not still `utf8`/`utf8mb3` or `float`, only log that the tables exist. `PrepareSchemaIfNecessary = false` skips installation and this check.
 
 New installs use `utf8mb4` / `utf8mb4_unicode_520_ci` and store `Set.Score` as `double` (64-bit). MySQL `utf8` is `utf8mb3` and cannot store emoji: a strict `sql_mode` rejects the insert, while a non-strict one silently stores `?` instead (migrating cannot recover data already replaced). `utf8mb4_general_ci` stores emoji but treats every non-BMP character as equal, so `AddToSet` (`ON DUPLICATE KEY UPDATE`) overwrites values that differ only by emoji. `utf8mb4_unicode_520_ci` keeps different emoji distinct and stays case- and accent-insensitive. It does ignore some invisible characters, so values that differ only by a zero-width joiner (U+200D) or a variation selector such as U+FE0F (for example `❤` and `❤️`) compare equal, as do `ß` and `ss`. Avoid keys, set values and ids that differ only that way. MySQL `FLOAT` is 32-bit, so delayed and recurring scores lose precision. String columns are `VARCHAR` so they inherit `utf8mb4`. MySQL `NVARCHAR` is fixed to `utf8mb3`. C# already reads and writes scores as `double`.
 
@@ -135,7 +135,14 @@ ALTER TABLE `Server` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_52
 ALTER TABLE `Set` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci, MODIFY `Score` double NOT NULL;
 ALTER TABLE `State` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 ALTER TABLE `List` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+CREATE TABLE IF NOT EXISTS `Schema` (
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Version`)
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+INSERT IGNORE INTO `Schema` (`Version`) VALUES (1);
 SET FOREIGN_KEY_CHECKS = 1;
 ```
+
+Version `1` means `utf8mb4` / `utf8mb4_unicode_520_ci` and `Set.Score` stored as `double`. After this script, the next startup finds the marker and does not warn. If you skip the `Schema` statements, a startup with `PrepareSchemaIfNecessary = true` records version `1` itself once the other tables already match.
 
 
