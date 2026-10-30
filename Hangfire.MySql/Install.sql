@@ -7,7 +7,11 @@
 -- MySQL NVARCHAR is VARCHAR CHARACTER SET utf8mb3, so string columns are VARCHAR
 -- and inherit the table charset. Otherwise emoji still fails on those columns.
 -- Set.Score is DOUBLE (64-bit). MySQL FLOAT is 32-bit and drops timestamp precision.
--- The installer does not alter existing databases. See README for ALTER statements.
+-- [tablesPrefix]Schema stores the schema version. Version 1 is this script:
+-- utf8mb4 / utf8mb4_unicode_520_ci and Set.Score DOUBLE.
+-- The installer does not ALTER existing databases. When Job already exists it
+-- reads the schema marker and information_schema, and logs a warning when a
+-- table is still utf8/utf8mb3 or Set.Score is still float. See the README.
 
 -- ----------------------------
 -- Table structure for `Job`
@@ -158,3 +162,13 @@ CREATE TABLE `[tablesPrefix]List`
 	`ExpireAt` datetime(6) NULL,
 	PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+
+-- ----------------------------
+-- Schema version marker. One row per version that has been installed.
+-- ----------------------------
+CREATE TABLE `[tablesPrefix]Schema` (
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Version`)
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
+
+INSERT INTO `[tablesPrefix]Schema` (`Version`) VALUES ([schemaVersion]);
