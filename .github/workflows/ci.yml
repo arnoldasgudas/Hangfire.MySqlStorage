@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    # Push already covers pull requests opened from this repository.
+    # Pull requests from forks only arrive as pull_request events.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Patch tags are the versions verified for #106 (198 tests).
+          # Health checks use TCP. The image entrypoint's temporary server
+          # is started with --skip-networking, so a socket ping would go
+          # green before MySQL is actually accepting connections.
+          - name: MySQL 5.7
+            image: mysql:5.7.44
+            health_cmd: mysqladmin ping -h 127.0.0.1 --protocol=tcp -uroot -proot --silent
+          - name: MySQL 8.0
+            image: mysql:8.0.46
+            health_cmd: mysqladmin ping -h 127.0.0.1 --protocol=tcp -uroot -proot --silent
+          - name: MariaDB 11.4
+            image: mariadb:11.4.13
+            health_cmd: healthcheck.sh --connect --innodb_initialized
+
+    services:
+      database:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - "3306:3306"
+        options: >-
+          --health-cmd "${{ matrix.health_cmd }}"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 30
+
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      # Hangfire.MySql.Tests targets netcoreapp2.0. The .NET 8 SDK builds it;
+      # the host needs roll-forward to execute that test assembly.
+      DOTNET_ROLL_FORWARD: Major
+      # MySqlConnector 1.0 defaults to SslMode=Preferred. MySQL 5.7's TLS
+      # handshake fails on the .NET 8 SslStream. These are local containers.
+      Hangfire_SqlServer_ConnectionStringTemplate: "server=127.0.0.1;port=3306;uid=root;pwd=root;database={0};Allow User Variables=True;SslMode=None"
+      Hangfire_SqlServer_DatabaseName: Hangfire.MySql.Tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test Hangfire.MySql.Tests/Hangfire.MySql.Tests.csproj --configuration Release --verbosity minimal
